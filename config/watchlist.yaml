@@ -1,0 +1,94 @@
+# Daily watchlist — tickers analyzed on every pipeline run.
+# Edit freely; the pipeline reads this file at startup.
+#
+# Fields per entry:
+#   ticker    — exchange ticker symbol (use ADR tickers for non-US, e.g. TSM not 2330.TW)
+#   name      — human-readable company name
+#   sector    — used for peer-comparison grouping
+#   priority  — high | medium | low (affects report ordering)
+#   country   — company headquarters country (optional, for region/country filtering)
+
+watchlist:
+  # Technology — US
+  - ticker: AAPL
+    name: Apple Inc.
+    sector: Technology
+    priority: high
+    country: United States
+
+  - ticker: MSFT
+    name: Microsoft Corporation
+    sector: Technology
+    priority: high
+    country: United States
+
+  - ticker: GOOGL
+    name: Alphabet Inc.
+    sector: Technology
+    priority: medium
+    country: United States
+
+  # Technology — Taiwan
+  - ticker: TSM
+    name: Taiwan Semiconductor Manufacturing (ADR)
+    sector: Technology
+    priority: high
+    country: Taiwan
+
+  - ticker: UMC
+    name: United Microelectronics Corp (ADR)
+    sector: Technology
+    priority: medium
+    country: Taiwan
+
+  - ticker: ASX
+    name: Advanced Semiconductor Engineering (ADR)
+    sector: Technology
+    priority: medium
+    country: Taiwan
+
+  # Financials — US
+  - ticker: JPM
+    name: JPMorgan Chase & Co.
+    sector: Financials
+    priority: high
+    country: United States
+
+  - ticker: BAC
+    name: Bank of America Corporation
+    sector: Financials
+    priority: medium
+    country: United States
+
+  # Healthcare — US
+  - ticker: JNJ
+    name: Johnson & Johnson
+    sector: Healthcare
+    priority: high
+    country: United States
+
+  - ticker: UNH
+    name: UnitedHealth Group Incorporated
+    sector: Healthcare
+    priority: medium
+    country: United States
+
+  # Energy — US
+  - ticker: XOM
+    name: Exxon Mobil Corporation
+    sector: Energy
+    priority: medium
+    country: United States
+
+  - ticker: CVX
+    name: Chevron Corporation
+    sector: Energy
+    priority: medium
+    country: United States
+
+  # Consumer Staples — US
+  - ticker: KO
+    name: The Coca-Cola Company
+    sector: Consumer Staples
+    priority: medium
+    country: United States

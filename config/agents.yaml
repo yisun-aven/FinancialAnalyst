@@ -1,0 +1,67 @@
+# Agent definitions for the Financial Analyst pipeline.
+#
+# To add a new agent:
+#   1. Add a block here following the schema below.
+#   2. Create prompts/<name>.md with the system prompt.
+#   3. Create agents/<name>.py inheriting BaseAgent.
+#   4. Register the agent in agents/orchestrator.py.
+#
+# Field reference:
+#   model_env_var  — name of the env var (from .env) that holds the model ID
+#   tools_allowed  — tool names the agent may call (subset of tools/ functions)
+
+agents:
+  orchestrator:
+    name: orchestrator
+    role: "Coordinates all agents, manages context flow, assembles final report"
+    model_env_var: MODEL_ORCHESTRATOR
+    max_tokens: 4096
+    temperature: 0.2
+    tools_allowed: []
+    prompt_file: prompts/orchestrator.md
+
+  data_collector:
+    name: data_collector
+    role: "Fetches stock prices, financial statements, SEC filings, and macro data"
+    model_env_var: MODEL_ANALYST
+    max_tokens: 4096
+    temperature: 0.0
+    tools_allowed:
+      - fetch_price_data
+      - fetch_financials
+      - fetch_sec_filing
+      - fetch_macro_data
+    prompt_file: prompts/data_collector.md
+
+  fundamental_analyst:
+    name: fundamental_analyst
+    role: "Runs valuation models (P/E, DCF, EV/EBITDA) and computes financial ratios"
+    model_env_var: MODEL_ANALYST
+    max_tokens: 8192
+    temperature: 0.1
+    tools_allowed:
+      - calculate_pe_ratio
+      - calculate_dcf
+      - calculate_ev_ebitda
+      - calculate_ratios
+    prompt_file: prompts/fundamental_analyst.md
+
+  sentiment_analyst:
+    name: sentiment_analyst
+    role: "Analyzes news sentiment, earnings call tone, analyst ratings, and insider activity"
+    model_env_var: MODEL_ANALYST
+    max_tokens: 8192
+    temperature: 0.1
+    tools_allowed:
+      - web_search
+      - fetch_analyst_ratings
+    prompt_file: prompts/sentiment_analyst.md
+
+  report_writer:
+    name: report_writer
+    role: "Generates a formatted daily analyst report in markdown from all agent outputs"
+    model_env_var: MODEL_WRITER
+    max_tokens: 16384
+    temperature: 0.3
+    tools_allowed: []
+    prompt_file: prompts/report_writer.md

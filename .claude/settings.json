@@ -1,0 +1,55 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ruff:*)",
+      "Bash(python -m pytest*)",
+      "Bash(python scripts/*)",
+      "Bash(pip install*)",
+      "Bash(cat*)",
+      "Bash(ls*)",
+      "Bash(find*)"
+    ],
+    "deny": [
+      "Bash(rm -rf*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import sys, json; data=json.load(sys.stdin); path=data.get('tool_input',{}).get('file_path',''); sys.exit(1) if '.env' in path and not path.endswith('.env.example') else sys.exit(0)\"",
+            "blocking": true,
+            "reason": "Refuse writes to .env to protect secrets"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import sys, json; data=json.load(sys.stdin); path=data.get('tool_input',{}).get('file_path',''); sys.exit(0) if not path.endswith('.py') else None\" || ruff check --fix $(python -c \"import sys, json; data=json.load(sys.stdin); print(data.get('tool_input',{}).get('file_path',''))\")",
+            "blocking": false,
+            "reason": "Auto-lint Python files with ruff after every write"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import sys, json; data=json.load(sys.stdin); path=data.get('tool_input',{}).get('file_path',''); sys.exit(0 if 'tests/' not in path else 1)\" || python -m pytest tests/ -q --tb=short",
+            "blocking": false,
+            "reason": "Auto-run pytest when test files are written"
+          }
+        ]
+      }
+    ]
+  }
+}
