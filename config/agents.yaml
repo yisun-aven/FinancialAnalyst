@@ -46,6 +46,35 @@ agents:
       - calculate_ratios
     prompt_file: prompts/fundamental_analyst.md
 
+  growth_analyst:
+    name: growth_analyst
+    role: "Computes 3-year revenue/EPS/FCF CAGRs, PEG ratio, and classifies growth quality"
+    model_env_var: MODEL_ANALYST
+    max_tokens: 4096
+    temperature: 0.1
+    tools_allowed:
+      - calculate_peg_ratio
+    prompt_file: prompts/growth_analyst.md
+
+  peer_comparison:
+    name: peer_comparison
+    role: "Compares valuation multiples to sector peers; computes peer discount/premium"
+    model_env_var: MODEL_ANALYST
+    max_tokens: 4096
+    temperature: 0.1
+    tools_allowed:
+      - fetch_price_data
+    prompt_file: prompts/peer_comparison.md
+
+  technical_analyst:
+    name: technical_analyst
+    role: "Computes RSI, moving averages, 52-week position, and volume trend; classifies entry signal"
+    model_env_var: MODEL_ANALYST
+    max_tokens: 2048
+    temperature: 0.1
+    tools_allowed: []
+    prompt_file: prompts/technical_analyst.md
+
   sentiment_analyst:
     name: sentiment_analyst
     role: "Analyzes news sentiment, earnings call tone, analyst ratings, and insider activity"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import re
 import sys
 import threading
@@ -12,30 +13,130 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="Financial Analyst AI")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 STATIC_DIR = Path(__file__).parent / "static"
 
+# ── Output directory helpers ───────────────────────────────────────────────
+
+_PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+print(f"[app] PROJECT_ROOT = {_PROJECT_ROOT}", flush=True)
+
+def _reports_dir() -> Path:
+    from config.settings import get_settings
+    d = get_settings().report_output_dir   # outputs/reports
+    if not d.is_absolute():
+        d = _PROJECT_ROOT / d
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+def _results_dir() -> Path:
+    from config.settings import get_settings
+    d = get_settings().results_output_dir  # outputs/results
+    if not d.is_absolute():
+        d = _PROJECT_ROOT / d
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def _save_results(
+    run_ts: str,
+    tickers_succeeded: list[str],
+    tickers_failed: list[str],
+    all_results: dict,
+    report_filename: str,
+    summary: str,
+    screen_results: list | None = None,
+) -> str:
+    """Persist agent outputs to a JSON file alongside the markdown report.
+
+    Returns the filename of the saved results file.
+    Filename format: 2026-04-11_17-34-22_TSM-AAPL-MSFT_results.json
+    """
+    ticker_slug = "-".join(t.replace(".", "") for t in tickers_succeeded[:4])
+    if len(tickers_succeeded) > 4:
+        ticker_slug += f"+{len(tickers_succeeded) - 4}more"
+    filename = f"{run_ts}_{ticker_slug}_results.json" if ticker_slug else f"{run_ts}_results.json"
+    payload = {
+        "run_ts": run_ts,
+        "tickers_succeeded": tickers_succeeded,
+        "tickers_failed": tickers_failed,
+        "all_results": all_results,
+        "report_filename": report_filename,
+        "summary": summary,
+        "screen_results": screen_results or [],
+    }
+    path = _results_dir() / filename
+    path.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+    return filename
+
+
+# ── REST endpoints ─────────────────────────────────────────────────────────
 
 @app.get("/")
 async def index() -> HTMLResponse:
     return HTMLResponse((STATIC_DIR / "index.html").read_text(encoding="utf-8"))
 
 
+@app.get("/api/runs")
+async def list_runs() -> JSONResponse:
+    """List all saved result runs, newest first.
+
+    Each entry has: filename, run_ts, tickers, report_filename, size_kb.
+    """
+    out = _results_dir()
+    runs = []
+    for f in out.glob("*_results.json"):
+        if not f.is_file():
+            continue
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+            # run_ts is stored inside the JSON; fall back to parsing the filename
+            run_ts = data.get("run_ts") or f.stem[:16]  # "2026-04-11_17-34"
+            runs.append({
+                "filename": f.name,
+                "run_ts": run_ts,
+                "tickers": data.get("tickers_succeeded", []),
+                "report_filename": data.get("report_filename", ""),
+                "size_kb": round(f.stat().st_size / 1024, 1),
+            })
+        except Exception:
+            continue
+    runs.sort(key=lambda r: r["run_ts"], reverse=True)
+    return JSONResponse(runs)
+
+
+@app.get("/api/runs/{filename:path}")
+async def get_run(filename: str) -> JSONResponse:
+    """Return the full results JSON for a saved run."""
+    if not re.match(r"^[\w\-\.]+\.json$", filename):
+        return JSONResponse({"error": "Invalid filename"}, status_code=400)
+    path = _results_dir() / filename
+    if not path.exists():
+        return JSONResponse({"error": "Not found"}, status_code=404)
+    return JSONResponse(json.loads(path.read_text(encoding="utf-8")))
+
+
 @app.get("/api/reports")
 async def list_reports() -> JSONResponse:
-    from config.settings import get_settings
-    out = get_settings().report_output_dir
+    out = _reports_dir()
     import re as _re
     reports = sorted(
         [
             {
                 "filename": f.name,
-                # stem is like "2026-04-05_14-32-01_analyst_report"
-                # extract just date + time for display
                 "date": _re.sub(r"_analyst_report$", "", f.stem).replace("_", " ", 1),
                 "size_kb": round(f.stat().st_size / 1024, 1),
             }
@@ -48,14 +149,16 @@ async def list_reports() -> JSONResponse:
     return JSONResponse(reports)
 
 
-@app.get("/api/reports/{filename}")
+@app.get("/api/reports/{filename:path}")
 async def get_report(filename: str) -> JSONResponse:
-    if not re.match(r"^[\w\-\.]+\.md$", filename):
+    if not re.match(r"^[\w\-\.]+$", filename):
         return JSONResponse({"error": "Invalid filename"}, status_code=400)
-    from config.settings import get_settings
-    path = get_settings().report_output_dir / filename
+    reports_dir = _reports_dir()
+    path = reports_dir / filename
+    import logging as _logging
+    _logging.getLogger("uvicorn").info("get_report: dir=%s  file=%s  exists=%s", reports_dir, path, path.exists())
     if not path.exists():
-        return JSONResponse({"error": "Not found"}, status_code=404)
+        return JSONResponse({"error": "Not found", "path": str(path)}, status_code=404)
     return JSONResponse({"filename": filename, "content": path.read_text(encoding="utf-8")})
 
 
@@ -85,25 +188,63 @@ async def run_pipeline_ws(websocket: WebSocket) -> None:
     def _now() -> str:
         return datetime.now(timezone.utc).isoformat()
 
+    # Collect per-ticker agent outputs server-side for persistence
+    _agent_outputs: dict[str, dict] = {}
+    _orig_emit = emit
+
+    def emit_and_collect(event: dict) -> None:
+        _orig_emit(event)
+        if event.get("type") == "agent_ticker_complete" and event.get("ticker"):
+            ticker = event["ticker"]
+            agent  = event.get("agent", "")
+            data   = event.get("data", {})
+            if ticker not in _agent_outputs:
+                _agent_outputs[ticker] = {}
+            KEY_MAP = {
+                "fundamental_analyst": "fundamental",
+                "growth_analyst":      "growth",
+                "peer_comparison":     "peers",
+                "technical_analyst":   "technical",
+                "sentiment_analyst":   "sentiment",
+                "data_collector":      "raw",
+            }
+            if agent in KEY_MAP:
+                _agent_outputs[ticker][KEY_MAP[agent]] = data
+
     def run_sync() -> None:
         result: dict = {}
+        run_ts = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
         try:
             from agents.orchestrator import OrchestratorAgent, _load_agents_config
             from config.settings import get_settings
             settings = get_settings()
             cfg = _load_agents_config()
-            orch = OrchestratorAgent(cfg["orchestrator"], settings, event_callback=emit)
+            orch = OrchestratorAgent(cfg["orchestrator"], settings, event_callback=emit_and_collect)
             result = orch.run({"tickers": tickers, "run_date": run_date})
         except Exception as exc:
             emit({"type": "pipeline_error", "agent": "orchestrator",
                   "data": {"error": str(exc)}, "timestamp": _now()})
         finally:
+            report_filename = Path(result.get("report_path", "x")).name
+            results_filename = ""
+            try:
+                results_filename = _save_results(
+                    run_ts=run_ts,
+                    tickers_succeeded=result.get("tickers_succeeded", []),
+                    tickers_failed=result.get("tickers_failed", []),
+                    all_results=_agent_outputs,
+                    report_filename=report_filename,
+                    summary=result.get("summary", ""),
+                )
+            except Exception:
+                pass
             emit({
                 "type": "pipeline_complete",
                 "agent": "orchestrator",
                 "data": {
                     "report_path": result.get("report_path", ""),
-                    "report_filename": Path(result.get("report_path", "x")).name,
+                    "report_filename": report_filename,
+                    "results_filename": results_filename,
                     "tickers_succeeded": result.get("tickers_succeeded", []),
                     "tickers_failed": result.get("tickers_failed", []),
                     "summary": result.get("summary", ""),
@@ -169,6 +310,28 @@ async def screen_and_run_ws(websocket: WebSocket) -> None:
             "data": data or {},
             "timestamp": _now(),
         })
+
+    # Collect per-ticker agent outputs server-side for persistence
+    _agent_outputs_s: dict[str, dict] = {}
+
+    def agent_emit_and_collect(event: dict) -> None:
+        loop.call_soon_threadsafe(queue.put_nowait, event)
+        if event.get("type") == "agent_ticker_complete" and event.get("ticker"):
+            ticker = event["ticker"]
+            agent  = event.get("agent", "")
+            data   = event.get("data", {})
+            if ticker not in _agent_outputs_s:
+                _agent_outputs_s[ticker] = {}
+            KEY_MAP = {
+                "fundamental_analyst": "fundamental",
+                "growth_analyst":      "growth",
+                "peer_comparison":     "peers",
+                "technical_analyst":   "technical",
+                "sentiment_analyst":   "sentiment",
+                "data_collector":      "raw",
+            }
+            if agent in KEY_MAP:
+                _agent_outputs_s[ticker][KEY_MAP[agent]] = data
 
     def run_sync() -> None:
         try:
@@ -243,19 +406,33 @@ async def screen_and_run_ws(websocket: WebSocket) -> None:
             # Step 3: full pipeline on top N
             from agents.orchestrator import OrchestratorAgent, _load_agents_config
 
-            def agent_emit(event: dict) -> None:
-                loop.call_soon_threadsafe(queue.put_nowait, event)
-
+            run_ts = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
             cfg = _load_agents_config()
-            orch = OrchestratorAgent(cfg["orchestrator"], settings, event_callback=agent_emit)
+            orch = OrchestratorAgent(cfg["orchestrator"], settings, event_callback=agent_emit_and_collect)
             result = orch.run({"tickers": top_tickers, "run_date": run_date})
+
+            report_filename = Path(result.get("report_path", "x")).name
+            results_filename = ""
+            try:
+                results_filename = _save_results(
+                    run_ts=run_ts,
+                    tickers_succeeded=result.get("tickers_succeeded", []),
+                    tickers_failed=result.get("tickers_failed", []),
+                    all_results=_agent_outputs_s,
+                    report_filename=report_filename,
+                    summary=result.get("summary", ""),
+                    screen_results=top_stocks,
+                )
+            except Exception:
+                pass
 
             loop.call_soon_threadsafe(queue.put_nowait, {
                 "type": "pipeline_complete",
                 "agent": "orchestrator",
                 "data": {
                     "report_path": result.get("report_path", ""),
-                    "report_filename": Path(result.get("report_path", "x")).name,
+                    "report_filename": report_filename,
+                    "results_filename": results_filename,
                     "tickers_succeeded": result.get("tickers_succeeded", []),
                     "tickers_failed": result.get("tickers_failed", []),
                     "summary": result.get("summary", ""),

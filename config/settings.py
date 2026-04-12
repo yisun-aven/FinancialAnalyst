@@ -32,7 +32,8 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     # ── Paths ─────────────────────────────────────────────────────────────────
-    report_output_dir: Path = Path("outputs")
+    report_output_dir: Path = Path("outputs/reports")   # markdown reports
+    results_output_dir: Path = Path("outputs/results")  # JSON result snapshots
     watchlist_path: Path = Path("config/watchlist.yaml")
 
     def model_for_role(self, role: str) -> str:

@@ -8,24 +8,24 @@
   /* ── Reset & base ───────────────────────────────────────────────────── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --bg: #0d1117;
-    --surface: #161b22;
-    --surface2: #1e2530;
-    --border: #30363d;
-    --border2: #21262d;
-    --text: #e6edf3;
-    --text2: #8b949e;
-    --text3: #656d76;
-    --accent: #3b82f6;
-    --accent-dim: #1d4ed840;
-    --green: #22c55e;
-    --red: #ef4444;
-    --yellow: #eab308;
-    --purple: #a78bfa;
-    --orange: #f97316;
-    --green-dim: #16a34a20;
-    --red-dim: #dc262620;
-    --yellow-dim: #ca8a0420;
+    --bg: #f7f8fa;
+    --surface: #ffffff;
+    --surface2: #f0f2f5;
+    --border: #dde1e7;
+    --border2: #e8eaed;
+    --text: #1a1d23;
+    --text2: #4a5060;
+    --text3: #8a909e;
+    --accent: #4f6ef7;
+    --accent-dim: #4f6ef712;
+    --green: #16a34a;
+    --red: #dc2626;
+    --yellow: #b45309;
+    --purple: #7c3aed;
+    --orange: #c2410c;
+    --green-dim: #16a34a12;
+    --red-dim: #dc262612;
+    --yellow-dim: #b4530912;
     --radius: 8px;
     --font-mono: "SF Mono", "Fira Code", "Cascadia Code", monospace;
   }
@@ -50,8 +50,8 @@
     position: sticky;
     top: 0;
     z-index: 50;
-    background: var(--bg);
-    backdrop-filter: blur(10px);
+    background: var(--surface);
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
   }
   .logo { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; }
   .logo-icon { width: 28px; height: 28px; background: var(--accent); border-radius: 6px;
@@ -91,7 +91,7 @@
   .mode-btn.active {
     background: var(--surface);
     color: var(--text);
-    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
   }
 
   /* ── Discover form ───────────────────────────────────────────────────── */
@@ -193,10 +193,10 @@
   }
   .btn:disabled { opacity: .5; cursor: not-allowed; }
   .btn-primary { background: var(--accent); color: #fff; }
-  .btn-primary:hover:not(:disabled) { background: #2563eb; }
+  .btn-primary:hover:not(:disabled) { background: #3b5ce4; }
   .btn-sm { padding: 5px 10px; font-size: 12px; }
-  .btn-ghost { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
-  .btn-ghost:hover:not(:disabled) { background: var(--border); }
+  .btn-ghost { background: var(--surface); color: var(--text2); border: 1px solid var(--border); }
+  .btn-ghost:hover:not(:disabled) { background: var(--surface2); }
 
   .ticker-chips {
     display: flex;
@@ -268,38 +268,75 @@
   .stat-label { font-size: 11px; color: var(--text3); }
   .stat-value { font-size: 15px; font-weight: 600; font-family: var(--font-mono); }
 
-  /* Past reports */
-  .reports-list {
+  /* Past runs list */
+  .runs-list {
     flex: 1;
     overflow-y: auto;
-    padding: 8px 12px;
+    padding: 6px 10px;
   }
-  .report-item {
+  .run-item {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 3px;
     padding: 8px 10px;
     border-radius: var(--radius);
     cursor: pointer;
     transition: background .1s;
     border: 1px solid transparent;
-    gap: 8px;
+    margin-bottom: 2px;
   }
-  .report-item:hover { background: var(--surface2); }
-  .report-item.active { background: var(--surface2); border-color: var(--border); }
-  .report-date { font-size: 12px; font-family: var(--font-mono); color: var(--text); }
-  .report-size { font-size: 11px; color: var(--text3); flex-shrink: 0; }
+  .run-item:hover { background: var(--surface2); }
+  .run-item.active { background: var(--surface2); border-color: var(--accent); }
+  .run-item-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .run-ts { font-size: 11px; font-family: var(--font-mono); color: var(--text2); }
+  .run-size { font-size: 10px; color: var(--text3); flex-shrink: 0; }
+  .run-tickers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+  .run-ticker-chip {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  .run-actions {
+    display: flex;
+    gap: 4px;
+    margin-top: 2px;
+  }
+  .run-action-btn {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text3);
+    cursor: pointer;
+    transition: background .1s, color .1s;
+  }
+  .run-action-btn:hover { background: var(--border2); color: var(--text); }
 
   /* ── Main content ─────────────────────────────────────────────────────── */
   .content {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    min-height: 0;
   }
   .tab-bar {
     display: flex;
     border-bottom: 1px solid var(--border);
-    padding: 0 20px;
+    padding: 0 20px 0 16px;
     gap: 4px;
     flex-shrink: 0;
   }
@@ -329,12 +366,13 @@
     font-family: var(--font-mono);
   }
 
-  .tab-content { flex: 1; overflow: hidden; display: none; }
-  .tab-content.active { display: flex; flex-direction: column; overflow: hidden; }
+  .tab-content { flex: 1; min-height: 0; overflow: hidden; display: none; }
+  .tab-content.active { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
 
   /* ── Live feed ───────────────────────────────────────────────────────── */
   #feed {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding: 16px 20px;
     display: flex;
@@ -413,6 +451,7 @@
   /* ── Result cards ──────────────────────────────────────────────────── */
   #results-panel {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding: 20px;
     display: flex;
@@ -568,6 +607,7 @@
   /* ── Report viewer ──────────────────────────────────────────────────── */
   #report-viewer {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding: 24px 32px;
     max-width: 900px;
@@ -599,16 +639,120 @@
   .report-md hr { border: none; border-top: 1px solid var(--border2); margin: 20px 0; }
   .report-md em { color: var(--text3); }
 
+  /* ── Target price gauge ─────────────────────────────────────────────── */
+  .target-gauge-wrap { padding: 12px 0 8px; }
+  .target-gauge {
+    position: relative;
+    height: 12px;
+    background: var(--surface2);
+    border-radius: 6px;
+    overflow: visible;
+    margin: 6px 0 4px;
+    border: 1px solid var(--border2);
+  }
+  .gauge-zone {
+    position: absolute;
+    top: 0; bottom: 0;
+    opacity: 0.35;
+    border-radius: 0;
+  }
+  .zone-buy { background: var(--green); border-radius: 6px 0 0 6px; }
+  .zone-base { background: var(--yellow); }
+  .zone-bull { background: var(--purple); border-radius: 0 6px 6px 0; }
+  .gauge-marker {
+    position: absolute;
+    top: -3px; bottom: -3px;
+    width: 2px;
+    background: var(--border);
+    transform: translateX(-50%);
+    z-index: 2;
+  }
+  .gauge-current {
+    position: absolute;
+    top: -5px; bottom: -5px;
+    width: 4px;
+    border-radius: 2px;
+    transform: translateX(-50%);
+    z-index: 3;
+    box-shadow: 0 0 6px currentColor;
+  }
+  .gauge-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    margin-top: 6px;
+  }
+
+  /* ── Reasoning accordion ─────────────────────────────────────────────── */
+  .reasoning-accordion { display: flex; flex-direction: column; gap: 4px; }
+  .reasoning-section { border: 1px solid var(--border2); border-radius: 6px; overflow: hidden; }
+  .reasoning-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    background: var(--surface2);
+    user-select: none;
+    transition: background .15s;
+  }
+  .reasoning-header:hover { background: var(--surface); }
+  .reasoning-agent-label { font-size: 12px; font-weight: 600; color: var(--text2); flex: 1; }
+  .reasoning-expand { font-size: 11px; color: var(--text3); margin-left: auto; }
+  .reasoning-body {
+    padding: 0 12px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .35s ease, padding .25s ease;
+  }
+  .reasoning-body.open {
+    max-height: 2000px;
+    overflow-y: auto;
+    padding: 10px 12px;
+  }
+  .entry-strategy-box {
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: var(--accent-dim);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  /* ── Confidence & growth score badges ───────────────────────────────── */
+  .confidence-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  .conf-high { background: var(--green-dim); color: var(--green); }
+  .conf-medium { background: var(--yellow-dim); color: var(--yellow); }
+  .conf-low { background: var(--red-dim); color: var(--red); }
+  .growth-score-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-family: var(--font-mono);
+  }
+
   /* ── Scrollbars ─────────────────────────────────────────────────────── */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border); }
 
   /* ── Spinner ─────────────────────────────────────────────────────────── */
   .spinner {
     width: 14px; height: 14px;
-    border: 2px solid var(--border);
+    border: 2px solid var(--border2);
     border-top-color: var(--accent);
     border-radius: 50%;
     animation: spin .7s linear infinite;
@@ -616,12 +760,121 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* ── Composite score leaderboard ────────────────────────────────────── */
+  .leaderboard-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .leaderboard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px 10px;
+    border-bottom: 1px solid var(--border2);
+    background: var(--surface2);
+  }
+  .leaderboard-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    color: var(--text);
+  }
+  .leaderboard-subtitle {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 2px;
+  }
+  .leaderboard-formula {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--text3);
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 3px 8px;
+  }
+  .leaderboard-rows { display: flex; flex-direction: column; }
+  .lb-row {
+    display: grid;
+    grid-template-columns: 44px 1fr 160px 200px 80px;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border2);
+    transition: background .12s;
+    cursor: pointer;
+  }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-row:hover { background: var(--surface2); }
+  .lb-row.lb-gold   { background: linear-gradient(90deg, rgba(234,179,8,.07) 0%, transparent 60%); }
+  .lb-row.lb-silver { background: linear-gradient(90deg, rgba(139,148,158,.07) 0%, transparent 60%); }
+  .lb-row.lb-bronze { background: linear-gradient(90deg, rgba(249,115,22,.07) 0%, transparent 60%); }
+  .lb-rank {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    flex-shrink: 0;
+  }
+  .lb-rank.r1 { background: rgba(234,179,8,.2); color: #eab308; border: 1.5px solid #eab308; }
+  .lb-rank.r2 { background: rgba(139,148,158,.2); color: #8b949e; border: 1.5px solid #8b949e; }
+  .lb-rank.r3 { background: rgba(249,115,22,.2); color: #f97316; border: 1.5px solid #f97316; }
+  .lb-rank.rn { background: var(--surface2); color: var(--text3); border: 1.5px solid var(--border); }
+  .lb-ticker-col { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .lb-ticker { font-size: 15px; font-weight: 700; font-family: var(--font-mono); }
+  .lb-company { font-size: 11px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lb-badges { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 3px; }
+  .lb-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .lb-components { display: flex; flex-direction: column; gap: 4px; }
+  .lb-component-row { display: flex; align-items: center; gap: 6px; }
+  .lb-comp-label { font-size: 10px; color: var(--text3); width: 60px; flex-shrink: 0; text-align: right; }
+  .lb-comp-bar-wrap {
+    flex: 1;
+    height: 5px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .lb-comp-bar { height: 100%; border-radius: 3px; transition: width .5s ease; }
+  .lb-comp-val { font-size: 10px; font-family: var(--font-mono); color: var(--text2); width: 32px; text-align: right; flex-shrink: 0; }
+  .lb-score-col { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .lb-score-ring {
+    position: relative;
+    width: 52px; height: 52px;
+  }
+  .lb-score-ring svg { transform: rotate(-90deg); }
+  .lb-score-ring-val {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 800;
+    font-family: var(--font-mono);
+  }
+  .lb-score-label { font-size: 10px; color: var(--text3); text-align: right; }
+
   /* ── Toast ───────────────────────────────────────────────────────────── */
   #toast {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    background: var(--surface2);
+    background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 10px 16px;
@@ -631,6 +884,7 @@
     transform: translateY(10px);
     transition: opacity .2s, transform .2s;
     max-width: 320px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.10);
   }
   #toast.show { opacity: 1; transform: translateY(0); }
 </style>
@@ -746,13 +1000,28 @@
         </div>
         <div class="stage" id="stage-3">
           <div class="stage-icon">3</div>
-          <div class="stage-label">Sentiment Analysis</div>
+          <div class="stage-label">Growth Analysis</div>
           <div class="stage-time" id="stage-3-time"></div>
         </div>
         <div class="stage" id="stage-4">
           <div class="stage-icon">4</div>
-          <div class="stage-label">Report Writing</div>
+          <div class="stage-label">Peer Comparison</div>
           <div class="stage-time" id="stage-4-time"></div>
+        </div>
+        <div class="stage" id="stage-5">
+          <div class="stage-icon">5</div>
+          <div class="stage-label">Technical Analysis</div>
+          <div class="stage-time" id="stage-5-time"></div>
+        </div>
+        <div class="stage" id="stage-6">
+          <div class="stage-icon">6</div>
+          <div class="stage-label">Sentiment Analysis</div>
+          <div class="stage-time" id="stage-6-time"></div>
+        </div>
+        <div class="stage" id="stage-7">
+          <div class="stage-icon">7</div>
+          <div class="stage-label">Report Writing</div>
+          <div class="stage-time" id="stage-7-time"></div>
         </div>
       </div>
     </div>
@@ -776,11 +1045,11 @@
       </div>
     </div>
 
-    <!-- Past reports -->
+    <!-- Past runs -->
     <div class="sidebar-section" style="border-bottom:none; padding-bottom:4px;">
-      <h3>Past Reports</h3>
+      <h3>Past Runs</h3>
     </div>
-    <div class="reports-list" id="reportsList">
+    <div class="runs-list" id="runsList">
       <div style="color:var(--text3);font-size:12px;padding:8px 2px;">Loading…</div>
     </div>
   </aside>
@@ -817,7 +1086,7 @@
 
     <!-- Screen tab -->
     <div class="tab-content" id="tab-screen">
-      <div id="screen-panel" style="flex:1;overflow-y:auto;padding:20px;">
+      <div id="screen-panel" style="flex:1;min-height:0;overflow-y:auto;padding:20px;">
         <div class="feed-empty">
           <div class="feed-empty-icon">🔍</div>
           <div>
@@ -868,8 +1137,55 @@ let resultsCount = 0;
 let tokensIn = 0, tokensOut = 0, claudeCalls = 0;
 let stageStartTimes = {};
 let allResults = {};
+let lastPipelineData = null;   // persisted across tab switches + page reloads
 let currentReport = null;
 let currentMode = 'manual';  // 'manual' | 'discover'
+
+// ── Persistence — server-side JSON files ─────────────────────────────────
+// allResults and lastPipelineData are populated from /api/runs/{filename}
+// on page load (most recent run) and when user clicks a past run in the sidebar.
+
+function saveResultsToStorage() { /* no-op — server saves on pipeline_complete */ }
+
+function clearStoredResults() {
+  allResults = {};
+  lastPipelineData = null;
+}
+
+async function loadRunFile(filename) {
+  try {
+    const res = await fetch(`/api/runs/${encodeURIComponent(filename)}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch(e) { return null; }
+}
+
+async function loadAndRenderRun(filename, runItem) {
+  // Highlight active item in sidebar
+  document.querySelectorAll('.run-item').forEach(el => el.classList.remove('active'));
+  if (runItem) runItem.classList.add('active');
+
+  const data = await loadRunFile(filename);
+  if (!data) { toast('Could not load run file', true); return; }
+
+  allResults      = data.all_results || {};
+  lastPipelineData = {
+    tickers_succeeded: data.tickers_succeeded || [],
+    tickers_failed:    data.tickers_failed    || [],
+    report_filename:   data.report_filename   || '',
+    results_filename:  filename,
+    summary:           data.summary           || '',
+    screen_results:    data.screen_results    || [],
+  };
+
+  _doRenderResults(lastPipelineData);
+  showTab('results', null);
+
+  // Also load the linked report if present
+  if (data.report_filename) {
+    loadReport(data.report_filename, /* switchTab= */ false);
+  }
+}
 
 // ── Mode toggle ──────────────────────────────────────────────────────────
 function setMode(mode) {
@@ -892,11 +1208,20 @@ function startDiscover() {
   running = true;
   feedCount = 0;
   tokensIn = 0; tokensOut = 0; claudeCalls = 0;
-  allResults = {};
+  clearStoredResults();
   stageStartTimes = {};
 
   const btn = document.getElementById('discoverBtn');
   btn.disabled = true;
+  [1,2,3,4,5,6,7].forEach(i => {
+    const el = document.getElementById(`stage-${i}`);
+    if (el) {
+      el.className = 'stage';
+      el.querySelector('.stage-icon').textContent = i;
+      const timeEl = document.getElementById(`stage-${i}-time`);
+      if (timeEl) timeEl.textContent = '';
+    }
+  });
   document.getElementById('discoverBtnIcon').innerHTML = '<div class="spinner" style="width:13px;height:13px;border-width:2px;"></div>';
   document.getElementById('discoverBtnText').textContent = 'Screening…';
   document.getElementById('headerStatus').textContent = `Screening ${country}…`;
@@ -906,12 +1231,6 @@ function startDiscover() {
   document.getElementById('feed').innerHTML = '';
   document.getElementById('screen-panel').innerHTML = '<div class="feed-empty"><div class="feed-empty-icon">⏳</div><div><strong>Screening in progress…</strong></div></div>';
   document.getElementById('results-panel').innerHTML = '<div class="feed-empty"><div class="feed-empty-icon">⏳</div><div><strong>Waiting for screen to complete…</strong></div></div>';
-  [1,2,3,4].forEach(i => {
-    const el = document.getElementById(`stage-${i}`);
-    el.className = 'stage';
-    el.querySelector('.stage-icon').textContent = i;
-    document.getElementById(`stage-${i}-time`).textContent = '';
-  });
 
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   ws = new WebSocket(`${proto}://${location.host}/ws/screen`);
@@ -978,7 +1297,7 @@ function startRun() {
   running = true;
   feedCount = 0;
   tokensIn = 0; tokensOut = 0; claudeCalls = 0;
-  allResults = {};
+  clearStoredResults();
   stageStartTimes = {};
 
   // Reset UI
@@ -996,11 +1315,13 @@ function startRun() {
   document.getElementById('results-panel').innerHTML = '<div class="feed-empty"><div class="feed-empty-icon">⏳</div><div><strong>Analysis in progress…</strong></div></div>';
 
   // Reset stage indicators
-  [1,2,3,4].forEach(i => {
+  [1,2,3,4,5,6,7].forEach(i => {
     const el = document.getElementById(`stage-${i}`);
-    el.className = 'stage';
-    el.querySelector('.stage-icon').textContent = i;
-    document.getElementById(`stage-${i}-time`).textContent = '';
+    if (el) {
+      el.className = 'stage';
+      el.querySelector('.stage-icon').textContent = i;
+      document.getElementById(`stage-${i}-time`).textContent = '';
+    }
   });
 
   // Connect WebSocket
@@ -1044,7 +1365,7 @@ function finishRun(success) {
     document.getElementById('discoverBtnText').textContent = 'Find Undervalued Stocks';
   }
   document.getElementById('headerStatus').textContent = success ? 'Complete' : 'Stopped';
-  loadReports();
+  loadRuns();
 }
 
 // ── Event handling ──────────────────────────────────────────────────────
@@ -1053,7 +1374,8 @@ function handleEvent(ev) {
 
   if (ev.type === 'pipeline_stage') {
     const i = ev.data.stage;
-    [1,2,3,4].forEach(j => {
+    const total = ev.data.total_stages || 6;
+    Array.from({length: total}, (_, k) => k + 1).forEach(j => {
       if (j < i) activateStage(j, 'done');
       else if (j === i) activateStage(j, 'active');
     });
@@ -1076,6 +1398,9 @@ function handleEvent(ev) {
     if (ticker) {
       if (!allResults[ticker]) allResults[ticker] = {};
       if (ev.agent === 'fundamental_analyst') allResults[ticker].fundamental = ev.data;
+      if (ev.agent === 'growth_analyst')      allResults[ticker].growth      = ev.data;
+      if (ev.agent === 'peer_comparison')     allResults[ticker].peers       = ev.data;
+      if (ev.agent === 'technical_analyst')   allResults[ticker].technical   = ev.data;
       if (ev.agent === 'sentiment_analyst')   allResults[ticker].sentiment   = ev.data;
       if (ev.agent === 'data_collector')      allResults[ticker].raw         = ev.data;
     }
@@ -1115,17 +1440,20 @@ function handleEvent(ev) {
   }
 
   if (ev.type === 'pipeline_complete') {
-    [1,2,3,4].forEach(i => {
-      if (document.getElementById(`stage-${i}`).className.includes('active')) {
+    [1,2,3,4,5,6,7].forEach(i => {
+      const el = document.getElementById(`stage-${i}`);
+      if (el && (el.className.includes('active') || el.className.includes('done'))) {
         activateStage(i, 'done');
       }
     });
 
     renderResults(ev.data);
-    if (ev.data.report_filename) loadReport(ev.data.report_filename);
+    if (ev.data.report_filename) loadReport(ev.data.report_filename, false);
     finishRun(true);
     toast(`Complete — ${ev.data.tickers_succeeded?.length || 0} tickers analysed`);
     showTab('results', null);
+    // Refresh sidebar after a short delay to ensure the server has written the run file
+    setTimeout(loadRuns, 800);
   }
 
   if (ev.type === 'pipeline_error') {
@@ -1134,7 +1462,7 @@ function handleEvent(ev) {
   }
 
   if (ev.type === 'report_ready') {
-    if (ev.data.report_filename) loadReport(ev.data.report_filename);
+    if (ev.data.report_filename) loadReport(ev.data.report_filename, false);
   }
 
   addFeedCard(ev);
@@ -1143,10 +1471,11 @@ function handleEvent(ev) {
 }
 
 function getCurrentStage() {
-  for (let i = 4; i >= 1; i--) {
-    if (document.getElementById(`stage-${i}`).className.includes('active')) return i;
+  for (let i = 7; i >= 1; i--) {
+    const el = document.getElementById(`stage-${i}`);
+    if (el && el.className.includes('active')) return i;
   }
-  return 4;
+  return 6;
 }
 
 function activateStage(i, state) {
@@ -1183,6 +1512,18 @@ const EVENT_LABELS = {
   screener_complete: '🔍 Screen complete',
   screen_results: '📋 Screen results',
   universe_loaded: '📥 Universe loaded',
+  rate_limit_wait: '⏳ Rate limit — retrying',
+};
+
+const AGENT_ICONS = {
+  fundamental_analyst: '📊',
+  growth_analyst: '📈',
+  peer_comparison: '🔀',
+  technical_analyst: '📉',
+  sentiment_analyst: '💬',
+  data_collector: '📥',
+  report_writer: '📄',
+  orchestrator: '🎯',
 };
 
 function addFeedCard(ev) {
@@ -1199,9 +1540,10 @@ function addFeedCard(ev) {
   const hasDetail = ev.data && Object.keys(ev.data).length > 0;
   const detailHtml = hasDetail ? buildEventDetail(ev) : '';
 
+  const agentIcon = AGENT_ICONS[ev.agent] || '';
   card.innerHTML = `
     <div class="event-header" onclick="toggleEventBody(this)">
-      <span class="event-agent-badge">${ev.agent || 'orchestrator'}</span>
+      <span class="event-agent-badge">${agentIcon ? agentIcon + ' ' : ''}${ev.agent || 'orchestrator'}</span>
       ${ev.ticker ? `<span class="event-ticker-badge">${ev.ticker}</span>` : ''}
       <span class="event-message">${label}${ev.message ? ' — ' + ev.message : ''}</span>
       <span class="event-time">${time}</span>
@@ -1237,14 +1579,75 @@ function buildEventDetail(ev) {
   if (ev.type === 'agent_ticker_complete' && ev.agent === 'fundamental_analyst') {
     const verdict = d.valuation_verdict || 'unknown';
     const mos = d.dcf_margin_of_safety;
+    const buyBelow = d.buy_below_price;
+    const targetBase = d.target_price_base;
+    const targetBull = d.target_price_bull;
+    const cur = d.current_price;
     return `
       <div class="metric-grid" style="margin-bottom:10px;">
         <div class="metric"><span class="metric-label">Verdict</span><span class="metric-value ${verdict === 'undervalued' ? 'good' : verdict === 'overvalued' ? 'bad' : 'neutral'}">${verdict}</span></div>
         <div class="metric"><span class="metric-label">Confidence</span><span class="metric-value">${d.confidence || '—'}</span></div>
         <div class="metric"><span class="metric-label">P/E</span><span class="metric-value">${d.pe_ratio ? d.pe_ratio.toFixed(1) + 'x' : '—'}</span></div>
+        <div class="metric"><span class="metric-label">PEG</span><span class="metric-value ${d.peg_ratio && d.peg_ratio < 1 ? 'good' : ''}">${d.peg_ratio ? d.peg_ratio.toFixed(2) : '—'}</span></div>
         <div class="metric"><span class="metric-label">EV/EBITDA</span><span class="metric-value">${d.ev_ebitda ? d.ev_ebitda.toFixed(1) + 'x' : '—'}</span></div>
-        <div class="metric"><span class="metric-label">DCF Value</span><span class="metric-value">${d.dcf_intrinsic_value ? '$' + d.dcf_intrinsic_value.toFixed(2) : '—'}</span></div>
+        <div class="metric"><span class="metric-label">P/FCF</span><span class="metric-value ${d.pfcf_ratio && d.pfcf_ratio < 15 ? 'good' : ''}">${d.pfcf_ratio ? d.pfcf_ratio.toFixed(1) + 'x' : '—'}</span></div>
+        <div class="metric"><span class="metric-label">DCF Base</span><span class="metric-value">${targetBase ? '$' + targetBase.toFixed(2) : '—'}</span></div>
+        <div class="metric"><span class="metric-label">Buy Below</span><span class="metric-value good">${buyBelow ? '$' + buyBelow.toFixed(2) : '—'}</span></div>
         <div class="metric"><span class="metric-label">Margin of Safety</span><span class="metric-value ${mos > 0.15 ? 'good' : mos < 0 ? 'bad' : 'neutral'}">${mos !== undefined && mos !== null ? (mos * 100).toFixed(1) + '%' : '—'}</span></div>
+      </div>
+      ${(cur && buyBelow && targetBase && targetBull) ? buildTargetPriceGauge(cur, buyBelow, targetBase, targetBull) : ''}
+      ${d.entry_strategy ? `<div style="font-size:12px;color:var(--text2);margin:8px 0;padding:8px;background:var(--surface2);border-radius:6px;border-left:3px solid var(--accent);"><strong>Entry:</strong> ${d.entry_strategy}</div>` : ''}
+      ${d.reasoning ? `<p class="reasoning-text">${d.reasoning}</p>` : ''}`;
+  }
+
+  if (ev.type === 'agent_ticker_complete' && ev.agent === 'growth_analyst') {
+    const gv = d.growth_verdict || 'unknown';
+    const score = d.growth_quality_score;
+    const gvColor = gv === 'high_quality_growth' ? 'var(--green)' : gv === 'value_trap_risk' ? 'var(--red)' : gv === 'slowing_growth' ? 'var(--yellow)' : 'var(--text)';
+    return `
+      <div class="metric-grid" style="margin-bottom:10px;">
+        <div class="metric"><span class="metric-label">Growth Verdict</span><span class="metric-value" style="color:${gvColor}">${gv.replace(/_/g,' ')}</span></div>
+        <div class="metric"><span class="metric-label">Quality Score</span><span class="metric-value">${score !== undefined ? score + '/10' : '—'}</span></div>
+        <div class="metric"><span class="metric-label">Rev CAGR 3Y</span><span class="metric-value ${d.revenue_cagr_3y_pct > 0 ? 'good' : 'bad'}">${d.revenue_cagr_3y_pct !== null && d.revenue_cagr_3y_pct !== undefined ? d.revenue_cagr_3y_pct.toFixed(1) + '%' : '—'}</span></div>
+        <div class="metric"><span class="metric-label">EPS CAGR 3Y</span><span class="metric-value ${d.eps_cagr_3y_pct > 0 ? 'good' : 'bad'}">${d.eps_cagr_3y_pct !== null && d.eps_cagr_3y_pct !== undefined ? d.eps_cagr_3y_pct.toFixed(1) + '%' : '—'}</span></div>
+        <div class="metric"><span class="metric-label">FCF CAGR 3Y</span><span class="metric-value ${d.fcf_cagr_3y_pct > 0 ? 'good' : 'bad'}">${d.fcf_cagr_3y_pct !== null && d.fcf_cagr_3y_pct !== undefined ? d.fcf_cagr_3y_pct.toFixed(1) + '%' : '—'}</span></div>
+        <div class="metric"><span class="metric-label">PEG</span><span class="metric-value ${d.peg_ratio && d.peg_ratio < 1 ? 'good' : ''}">${d.peg_ratio ? d.peg_ratio.toFixed(2) : '—'}</span></div>
+      </div>
+      ${d.reasoning ? `<p class="reasoning-text">${d.reasoning}</p>` : ''}`;
+  }
+
+  if (ev.type === 'agent_ticker_complete' && ev.agent === 'peer_comparison') {
+    const pv = d.peer_verdict || 'unknown';
+    const disc = d.composite_peer_discount_pct;
+    const discColor = disc > 10 ? 'var(--green)' : disc > 0 ? 'var(--yellow)' : 'var(--red)';
+    return `
+      <div class="metric-grid" style="margin-bottom:10px;">
+        <div class="metric"><span class="metric-label">Peer Verdict</span><span class="metric-value" style="color:${discColor}">${pv.replace(/_/g,' ')}</span></div>
+        <div class="metric"><span class="metric-label">Composite Discount</span><span class="metric-value" style="color:${discColor}">${disc !== null && disc !== undefined ? disc.toFixed(1) + '%' : '—'}</span></div>
+        <div class="metric"><span class="metric-label">Sector</span><span class="metric-value">${d.sector || '—'}</span></div>
+        <div class="metric"><span class="metric-label">Sector Median P/E</span><span class="metric-value">${d.sector_median_pe ? d.sector_median_pe.toFixed(1) + 'x' : '—'}</span></div>
+        <div class="metric"><span class="metric-label">P/E Discount</span><span class="metric-value ${d.company_pe_discount_pct > 0 ? 'good' : 'bad'}">${d.company_pe_discount_pct !== null && d.company_pe_discount_pct !== undefined ? d.company_pe_discount_pct.toFixed(1) + '%' : '—'}</span></div>
+        <div class="metric"><span class="metric-label">Peers Used</span><span class="metric-value" style="font-size:11px;">${(d.peers_used || []).slice(0,4).join(', ') || '—'}</span></div>
+      </div>
+      ${d.reasoning ? `<p class="reasoning-text">${d.reasoning}</p>` : ''}`;
+  }
+
+  if (ev.type === 'agent_ticker_complete' && ev.agent === 'technical_analyst') {
+    const tv = d.technical_verdict || 'neutral';
+    const tvColor = tv === 'strong_entry' ? 'var(--green)' : tv === 'overbought' ? 'var(--red)' : tv === 'avoid_entry' ? 'var(--red)' : 'var(--text2)';
+    const rsi = d.rsi_14;
+    const rsiColor = rsi !== null && rsi !== undefined ? (rsi >= 70 ? 'var(--red)' : rsi <= 30 ? 'var(--green)' : 'var(--text)') : 'var(--text3)';
+    const pos52 = d.position_52w;
+    const pos52Color = pos52 !== null && pos52 !== undefined ? (pos52 <= 0.3 ? 'var(--green)' : pos52 >= 0.8 ? 'var(--red)' : 'var(--text)') : 'var(--text3)';
+    const crossColor = d.cross_signal === 'golden_cross' ? 'var(--green)' : d.cross_signal === 'death_cross' ? 'var(--red)' : 'var(--text2)';
+    return `
+      <div class="metric-grid" style="margin-bottom:10px;">
+        <div class="metric"><span class="metric-label">Technical Verdict</span><span class="metric-value" style="color:${tvColor}">${tv.replace(/_/g,' ')}</span></div>
+        <div class="metric"><span class="metric-label">Entry Signal</span><span class="metric-value">${d.entry_signal || '—'}</span></div>
+        <div class="metric"><span class="metric-label">RSI (14)</span><span class="metric-value" style="color:${rsiColor}">${rsi !== null && rsi !== undefined ? rsi.toFixed(1) : '—'}</span></div>
+        <div class="metric"><span class="metric-label">MA Cross</span><span class="metric-value" style="color:${crossColor}">${(d.cross_signal || '—').replace(/_/g,' ')}</span></div>
+        <div class="metric"><span class="metric-label">52W Position</span><span class="metric-value" style="color:${pos52Color}">${pos52 !== null && pos52 !== undefined ? (pos52 * 100).toFixed(0) + '%' : '—'}</span></div>
+        <div class="metric"><span class="metric-label">Vol Ratio</span><span class="metric-value">${d.volume_ratio !== null && d.volume_ratio !== undefined ? d.volume_ratio.toFixed(2) + 'x' : '—'}</span></div>
       </div>
       ${d.reasoning ? `<p class="reasoning-text">${d.reasoning}</p>` : ''}`;
   }
@@ -1287,6 +1690,44 @@ function buildEventDetail(ev) {
     .map(([k, v]) => `<div class="metric"><span class="metric-label">${k}</span><span class="metric-value">${v}</span></div>`)
     .join('');
   return lines ? `<div class="metric-grid">${lines}</div>` : '';
+}
+
+// ── Target price gauge ────────────────────────────────────────────────────
+function buildTargetPriceGauge(cur, buyBelow, targetBase, targetBull) {
+  const lo = Math.min(cur, buyBelow) * 0.85;
+  const hi = Math.max(cur, targetBull) * 1.10;
+  const range = hi - lo;
+  if (range <= 0) return '';
+
+  const pct = v => Math.max(0, Math.min(100, ((v - lo) / range) * 100));
+  const curPct = pct(cur);
+  const buyPct = pct(buyBelow);
+  const basePct = pct(targetBase);
+  const bullPct = pct(targetBull);
+
+  const curColor = cur <= buyBelow ? 'var(--green)' : cur <= targetBase ? 'var(--yellow)' : 'var(--red)';
+
+  return `<div class="target-gauge-wrap">
+    <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Target Price Range</div>
+    <div class="target-gauge">
+      <div class="gauge-zone zone-buy" style="left:0%;width:${buyPct}%;"></div>
+      <div class="gauge-zone zone-base" style="left:${buyPct}%;width:${basePct - buyPct}%;"></div>
+      <div class="gauge-zone zone-bull" style="left:${basePct}%;width:${bullPct - basePct}%;"></div>
+      <div class="gauge-marker" style="left:${buyPct}%" title="Buy Below: $${buyBelow.toFixed(2)}"></div>
+      <div class="gauge-marker" style="left:${basePct}%" title="Base Target: $${targetBase.toFixed(2)}"></div>
+      <div class="gauge-marker" style="left:${bullPct}%" title="Bull Target: $${targetBull.toFixed(2)}"></div>
+      <div class="gauge-current" style="left:${curPct}%;background:${curColor};" title="Current: $${cur.toFixed(2)}"></div>
+    </div>
+    <div class="gauge-labels">
+      <span style="color:var(--green)">Bear $${buyBelow.toFixed(2)}</span>
+      <span style="color:var(--yellow)">Base $${targetBase.toFixed(2)}</span>
+      <span style="color:var(--purple)">Bull $${targetBull.toFixed(2)}</span>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:4px;">
+      Current: <strong style="color:${curColor}">$${cur.toFixed(2)}</strong>
+      ${cur <= buyBelow ? ' — <span style="color:var(--green);font-weight:600;">BELOW BUY TARGET ✓</span>' : cur <= targetBase ? ' — within base range' : ' — above base target'}
+    </div>
+  </div>`;
 }
 
 // ── Screen results panel ─────────────────────────────────────────────────
@@ -1351,30 +1792,220 @@ function renderScreenResults(stocks) {
   document.getElementById('screenBadge').textContent = stocks.length;
 }
 
+// ── Composite score (post-pipeline) ──────────────────────────────────────
+// Formula: 0.40 * margin_of_safety  (fundamental)
+//        + 0.30 * peer_discount      (peer comparison)
+//        + 0.20 * growth_score       (growth quality)
+//        + 0.10 * sentiment_score    (sentiment)
+// Each component is normalised to 0–1 before weighting.
+// Final score is 0–100.
+function computeCompositeScore(ticker) {
+  const fa = allResults[ticker]?.fundamental || {};
+  const ga = allResults[ticker]?.growth      || {};
+  const pa = allResults[ticker]?.peers       || {};
+  const sa = allResults[ticker]?.sentiment   || {};
+
+  // ── Component 1: Margin of Safety (0–1, clamp –0.5 → +0.5 → normalise)
+  const mos = fa.dcf_margin_of_safety ?? null;
+  const mosNorm = mos !== null
+    ? Math.max(0, Math.min(1, (mos + 0.5) / 1.0))   // –50% → 0, +50% → 1
+    : 0.5;                                            // neutral if missing
+
+  // ── Component 2: Peer discount (0–1, clamp –50% → +50% → normalise)
+  const peerDisc = pa.composite_peer_discount_pct ?? null;
+  const peerNorm = peerDisc !== null
+    ? Math.max(0, Math.min(1, (peerDisc + 50) / 100))
+    : 0.5;
+
+  // ── Component 3: Growth quality score (1–10 → 0–1)
+  const growthRaw = ga.growth_quality_score ?? null;
+  const growthNorm = growthRaw !== null
+    ? Math.max(0, Math.min(1, (growthRaw - 1) / 9))
+    : 0.5;
+
+  // ── Component 4: Sentiment score (–1 → +1 → normalise to 0–1)
+  const sentRaw = sa.sentiment_score ?? null;
+  const sentNorm = sentRaw !== null
+    ? Math.max(0, Math.min(1, (sentRaw + 1) / 2))
+    : 0.5;
+
+  const composite = (0.40 * mosNorm + 0.30 * peerNorm + 0.20 * growthNorm + 0.10 * sentNorm) * 100;
+
+  return {
+    composite: Math.round(composite * 10) / 10,
+    components: {
+      margin_of_safety: { norm: mosNorm, raw: mos, weight: 0.40, label: 'MoS' },
+      peer_discount:    { norm: peerNorm, raw: peerDisc, weight: 0.30, label: 'Peers' },
+      growth_quality:   { norm: growthNorm, raw: growthRaw, weight: 0.20, label: 'Growth' },
+      sentiment:        { norm: sentNorm, raw: sentRaw, weight: 0.10, label: 'Sentiment' },
+    },
+  };
+}
+
+// ── Composite leaderboard ─────────────────────────────────────────────────
+function buildScoreRing(score) {
+  const r = 22, cx = 26, cy = 26;
+  const circ = 2 * Math.PI * r;
+  const filled = (score / 100) * circ;
+  const color = score >= 65 ? 'var(--green)' : score >= 45 ? 'var(--yellow)' : 'var(--red)';
+  const textColor = score >= 65 ? 'var(--green)' : score >= 45 ? 'var(--yellow)' : 'var(--red)';
+  return `<div class="lb-score-ring">
+    <svg width="52" height="52" viewBox="0 0 52 52">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--surface2)" stroke-width="4"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="4"
+        stroke-dasharray="${filled.toFixed(1)} ${(circ - filled).toFixed(1)}"
+        stroke-linecap="round"/>
+    </svg>
+    <div class="lb-score-ring-val" style="color:${textColor}">${score.toFixed(0)}</div>
+  </div>`;
+}
+
+function buildComponentBars(components) {
+  const COMP_COLORS = {
+    margin_of_safety: 'var(--accent)',
+    peer_discount:    'var(--purple)',
+    growth_quality:   'var(--green)',
+    sentiment:        'var(--yellow)',
+  };
+  return Object.entries(components).map(([key, c]) => {
+    const barPct = (c.norm * 100).toFixed(0);
+    const rawStr = c.raw !== null && c.raw !== undefined
+      ? (key === 'margin_of_safety' ? (c.raw * 100).toFixed(0) + '%'
+       : key === 'peer_discount'    ? c.raw.toFixed(0) + '%'
+       : key === 'growth_quality'   ? c.raw + '/10'
+       : c.raw.toFixed(2))
+      : '—';
+    return `<div class="lb-component-row">
+      <span class="lb-comp-label">${c.label}</span>
+      <div class="lb-comp-bar-wrap">
+        <div class="lb-comp-bar" style="width:${barPct}%;background:${COMP_COLORS[key]};"></div>
+      </div>
+      <span class="lb-comp-val">${rawStr}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderCompositeLeaderboard(tickers, scored) {
+  if (!tickers.length) return null;
+
+  const RANK_CLASSES = ['r1', 'r2', 'r3'];
+  const ROW_CLASSES  = ['lb-gold', 'lb-silver', 'lb-bronze'];
+
+  const rows = scored.map((s, i) => {
+    const ticker = s.ticker;
+    const fa  = allResults[ticker]?.fundamental || {};
+    const ga  = allResults[ticker]?.growth      || {};
+    const raw = allResults[ticker]?.raw         || {};
+
+    const rankClass = RANK_CLASSES[i] || 'rn';
+    const rowClass  = ROW_CLASSES[i]  || '';
+    const rankLabel = i < 3 ? ['🥇','🥈','🥉'][i] : (i + 1);
+
+    const verdict = fa.valuation_verdict || 'unknown';
+    const verdictColor = verdict === 'undervalued' ? 'var(--green)' : verdict === 'overvalued' ? 'var(--red)' : 'var(--yellow)';
+    const verdictBg    = verdict === 'undervalued' ? 'var(--green-dim)' : verdict === 'overvalued' ? 'var(--red-dim)' : 'var(--yellow-dim)';
+
+    const gv = ga.growth_verdict || '';
+    const gvColor = gv === 'high_quality_growth' ? 'var(--green)' : gv === 'value_trap_risk' ? 'var(--red)' : gv === 'slowing_growth' ? 'var(--yellow)' : 'var(--text3)';
+    const gvBg    = gv === 'high_quality_growth' ? 'var(--green-dim)' : gv === 'value_trap_risk' ? 'var(--red-dim)' : gv === 'slowing_growth' ? 'var(--yellow-dim)' : 'var(--surface2)';
+
+    const entrySignal = allResults[ticker]?.technical?.entry_signal || '';
+    const esBg    = entrySignal === 'buy' ? 'var(--green-dim)' : entrySignal === 'avoid' ? 'var(--red-dim)' : 'var(--surface2)';
+    const esColor = entrySignal === 'buy' ? 'var(--green)' : entrySignal === 'avoid' ? 'var(--red)' : 'var(--text3)';
+
+    const price = fa.current_price ? `$${fa.current_price}` : (raw.current_price ? `$${raw.current_price}` : '');
+    const buyBelow = fa.buy_below_price ? `Buy ≤ $${fa.buy_below_price.toFixed(2)}` : '';
+
+    return `<div class="lb-row ${rowClass}" onclick="scrollToTicker('${ticker}')">
+      <div class="lb-rank ${rankClass}">${rankLabel}</div>
+      <div class="lb-ticker-col">
+        <span class="lb-ticker">${ticker}</span>
+        <span class="lb-company">${raw.company_name || fa.company_name || ''}</span>
+        <div class="lb-badges">
+          ${verdict ? `<span class="lb-badge" style="background:${verdictBg};color:${verdictColor};">${verdict.replace(/_/g,' ')}</span>` : ''}
+          ${gv ? `<span class="lb-badge" style="background:${gvBg};color:${gvColor};">${gv.replace(/_/g,' ')}</span>` : ''}
+          ${entrySignal ? `<span class="lb-badge" style="background:${esBg};color:${esColor};">${entrySignal}</span>` : ''}
+        </div>
+      </div>
+      <div class="lb-components">${buildComponentBars(s.score.components)}</div>
+      <div class="lb-score-col">
+        ${buildScoreRing(s.score.composite)}
+        <span class="lb-score-label">composite</span>
+        ${price ? `<span style="font-size:11px;font-family:var(--font-mono);color:var(--text2);margin-top:2px;">${price}</span>` : ''}
+        ${buyBelow ? `<span style="font-size:10px;color:var(--green);margin-top:1px;">${buyBelow}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  const wrap = document.createElement('div');
+  wrap.className = 'leaderboard-wrap';
+  wrap.innerHTML = `
+    <div class="leaderboard-header">
+      <div>
+        <div class="leaderboard-title">Composite Undervaluation Ranking</div>
+        <div class="leaderboard-subtitle">Sorted by post-pipeline composite score — click any row to jump to full analysis</div>
+      </div>
+      <div class="leaderboard-formula">40% MoS · 30% Peers · 20% Growth · 10% Sentiment</div>
+    </div>
+    <div class="leaderboard-rows">${rows}</div>`;
+  return wrap;
+}
+
 // ── Results panel ────────────────────────────────────────────────────────
 function renderResults(pipelineData) {
+  lastPipelineData = pipelineData;
+  _doRenderResults(pipelineData);
+}
+
+function _doRenderResults(pipelineData) {
   const panel = document.getElementById('results-panel');
   panel.innerHTML = '';
 
-  const tickers = pipelineData.tickers_succeeded || [];
-  if (!tickers.length) {
-    panel.innerHTML = '<div class="feed-empty"><div>No tickers succeeded</div></div>';
+  const tickerList = (pipelineData.tickers_succeeded || []);
+  if (!tickerList.length) {
+    panel.innerHTML = '<div class="feed-empty"><div class="feed-empty-icon">📊</div><div>No tickers succeeded</div></div>';
     return;
   }
 
-  tickers.forEach(ticker => {
-    const fa = allResults[ticker]?.fundamental || {};
-    const sa = allResults[ticker]?.sentiment || {};
-    const raw = allResults[ticker]?.raw || {};
+  // Compute composite scores and sort tickers best → worst
+  const scored = tickerList.map(ticker => ({
+    ticker,
+    score: computeCompositeScore(ticker),
+  })).sort((a, b) => b.score.composite - a.score.composite);
 
-    panel.appendChild(buildTickerCard(ticker, fa, sa, raw));
+  // Prepend leaderboard only when there are 2+ tickers (single ticker needs no ranking)
+  if (scored.length >= 2) {
+    const lb = renderCompositeLeaderboard(tickerList, scored);
+    if (lb) panel.appendChild(lb);
+  }
+
+  // Render ticker cards in ranked order
+  scored.forEach(({ ticker }) => {
+    const fa  = allResults[ticker]?.fundamental || {};
+    const ga  = allResults[ticker]?.growth      || {};
+    const pa  = allResults[ticker]?.peers       || {};
+    const ta  = allResults[ticker]?.technical   || {};
+    const sa  = allResults[ticker]?.sentiment   || {};
+    const raw = allResults[ticker]?.raw         || {};
+
+    const card = buildTickerCard(ticker, fa, ga, pa, ta, sa, raw);
+    card.id = `ticker-card-${ticker}`;
+    panel.appendChild(card);
   });
 
-  resultsCount = tickers.length;
+  resultsCount = tickerList.length;
   document.getElementById('resultsBadge').textContent = resultsCount;
 }
 
-function buildTickerCard(ticker, fa, sa, raw) {
+function scrollToTicker(ticker) {
+  showTab('results', null);
+  setTimeout(() => {
+    const el = document.getElementById(`ticker-card-${ticker}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 80);
+}
+
+function buildTickerCard(ticker, fa, ga, pa, ta, sa, raw) {
   const card = document.createElement('div');
   card.className = 'ticker-result-card';
 
@@ -1391,19 +2022,48 @@ function buildTickerCard(ticker, fa, sa, raw) {
   const sentBg = score > 0.3 ? 'var(--green-dim)' : score < -0.3 ? 'var(--red-dim)' : 'var(--yellow-dim)';
 
   const headlines = (sa.top_headlines || []).slice(0, 3);
-  const risks = (fa.key_risks || []).slice(0, 2);
-  const strengths = (fa.key_strengths || []).slice(0, 2);
-
+  const risks = (fa.key_risks || []).slice(0, 3);
+  const strengths = (fa.key_strengths || []).slice(0, 3);
   const ratios = fa.ratio_scorecard || {};
+
+  // Growth colors
+  const gvColor = ga.growth_verdict === 'high_quality_growth' ? 'var(--green)'
+    : ga.growth_verdict === 'value_trap_risk' ? 'var(--red)'
+    : ga.growth_verdict === 'slowing_growth' ? 'var(--yellow)' : 'var(--text2)';
+
+  // Peer discount color
+  const pDisc = pa.composite_peer_discount_pct;
+  const pDiscColor = pDisc > 10 ? 'var(--green)' : pDisc > 0 ? 'var(--yellow)' : 'var(--red)';
+
+  // Technical analysis colors
+  const tv = ta.technical_verdict;
+  const tvColor = tv === 'strong_entry' ? 'var(--green)' : tv === 'overbought' || tv === 'avoid_entry' ? 'var(--red)' : 'var(--text2)';
+  const taRsi = ta.rsi_14;
+  const taRsiColor = taRsi !== null && taRsi !== undefined ? (taRsi >= 70 ? 'var(--red)' : taRsi <= 30 ? 'var(--green)' : 'var(--text)') : 'var(--text3)';
+  const taPos52 = ta.position_52w;
+  const taPos52Color = taPos52 !== null && taPos52 !== undefined ? (taPos52 <= 0.3 ? 'var(--green)' : taPos52 >= 0.8 ? 'var(--red)' : 'var(--text)') : 'var(--text3)';
+  const taCrossColor = ta.cross_signal === 'golden_cross' ? 'var(--green)' : ta.cross_signal === 'death_cross' ? 'var(--red)' : 'var(--text2)';
+
+  // Target price gauge
+  const cur = fa.current_price;
+  const buyBelow = fa.buy_below_price;
+  const targetBase = fa.target_price_base;
+  const targetBull = fa.target_price_bull;
+  const gaugeHtml = (cur && buyBelow && targetBase && targetBull)
+    ? buildTargetPriceGauge(cur, buyBelow, targetBase, targetBull) : '';
 
   card.innerHTML = `
     <div class="ticker-result-header">
       <span class="ticker-symbol">${ticker}</span>
       <span class="ticker-company">${raw.company_name || ''}</span>
       ${fa.current_price ? `<span style="font-family:var(--font-mono);font-size:15px;font-weight:600;">$${fa.current_price}</span>` : ''}
-      <span class="verdict-badge ${verdictClass}">${verdict.replace('_', ' ')}</span>
+      <span class="verdict-badge ${verdictClass}">${verdict.replace(/_/g, ' ')}</span>
+      ${fa.confidence ? `<span class="confidence-badge conf-${fa.confidence}">${fa.confidence}</span>` : ''}
     </div>
     <div class="ticker-result-body">
+
+      <!-- Target Price Gauge -->
+      ${gaugeHtml ? `<div class="full-width-section" style="padding-bottom:0;">${gaugeHtml}</div>` : ''}
 
       <!-- Valuation metrics -->
       <div class="result-section">
@@ -1418,8 +2078,16 @@ function buildTickerCard(ticker, fa, sa, raw) {
             <span class="metric-value">${fa.forward_pe ? fa.forward_pe.toFixed(1) + 'x' : '—'}</span>
           </div>
           <div class="metric">
+            <span class="metric-label">PEG Ratio</span>
+            <span class="metric-value ${fa.peg_ratio && fa.peg_ratio < 1 ? 'good' : fa.peg_ratio && fa.peg_ratio > 2 ? 'bad' : ''}">${fa.peg_ratio ? fa.peg_ratio.toFixed(2) : '—'}</span>
+          </div>
+          <div class="metric">
             <span class="metric-label">EV/EBITDA</span>
             <span class="metric-value">${fa.ev_ebitda ? fa.ev_ebitda.toFixed(1) + 'x' : '—'}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">P/FCF</span>
+            <span class="metric-value ${fa.pfcf_ratio && fa.pfcf_ratio < 15 ? 'good' : fa.pfcf_ratio && fa.pfcf_ratio > 25 ? 'bad' : ''}">${fa.pfcf_ratio ? fa.pfcf_ratio.toFixed(1) + 'x' : '—'}</span>
           </div>
           <div class="metric">
             <span class="metric-label">FCF</span>
@@ -1434,10 +2102,106 @@ function buildTickerCard(ticker, fa, sa, raw) {
           </div>
           <div class="mos-label">
             <span style="color:${mosColor};font-weight:600;">${mosPct}%</span>
-            ${fa.dcf_intrinsic_value ? ` — DCF: <strong>$${fa.dcf_intrinsic_value.toFixed(2)}</strong>` : ''}
+            ${fa.dcf_intrinsic_value ? ` — DCF Base: <strong>$${fa.dcf_intrinsic_value.toFixed(2)}</strong>` : ''}
           </div>
         </div>` : ''}
       </div>
+
+      <!-- Growth Profile -->
+      ${ga.growth_verdict ? `
+      <div class="result-section">
+        <h4>Growth Profile</h4>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <span style="font-size:13px;font-weight:600;color:${gvColor}">${(ga.growth_verdict||'').replace(/_/g,' ')}</span>
+          ${ga.growth_quality_score !== undefined ? `<span class="growth-score-badge">${ga.growth_quality_score}/10</span>` : ''}
+        </div>
+        <div class="metric-grid">
+          <div class="metric">
+            <span class="metric-label">Rev CAGR 3Y</span>
+            <span class="metric-value ${ga.revenue_cagr_3y_pct > 0 ? 'good' : 'bad'}">${ga.revenue_cagr_3y_pct !== null && ga.revenue_cagr_3y_pct !== undefined ? ga.revenue_cagr_3y_pct.toFixed(1) + '%' : '—'}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">EPS CAGR 3Y</span>
+            <span class="metric-value ${ga.eps_cagr_3y_pct > 0 ? 'good' : 'bad'}">${ga.eps_cagr_3y_pct !== null && ga.eps_cagr_3y_pct !== undefined ? ga.eps_cagr_3y_pct.toFixed(1) + '%' : '—'}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">FCF CAGR 3Y</span>
+            <span class="metric-value ${ga.fcf_cagr_3y_pct > 0 ? 'good' : 'bad'}">${ga.fcf_cagr_3y_pct !== null && ga.fcf_cagr_3y_pct !== undefined ? ga.fcf_cagr_3y_pct.toFixed(1) + '%' : '—'}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Rev Trend</span>
+            <span class="metric-value">${ga.revenue_trend || '—'}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Fwd Growth Est</span>
+            <span class="metric-value">${ga.forward_growth_estimate_pct !== null && ga.forward_growth_estimate_pct !== undefined ? ga.forward_growth_estimate_pct.toFixed(1) + '%' : '—'}</span>
+          </div>
+        </div>
+        ${(ga.growth_catalysts||[]).length ? `<div style="font-size:11px;color:var(--green);margin-top:6px;">${(ga.growth_catalysts||[]).map(c=>`<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 6px;background:var(--green-dim);border-radius:4px;">+ ${c}</span>`).join('')}</div>` : ''}
+      </div>` : ''}
+
+      <!-- Peer Comparison -->
+      ${pa.peer_verdict ? `
+      <div class="result-section">
+        <h4>Peer Comparison <span style="font-size:11px;color:var(--text3);font-weight:400;">${pa.sector || ''}</span></h4>
+        <div class="metric-grid">
+          <div class="metric">
+            <span class="metric-label">Peer Verdict</span>
+            <span class="metric-value" style="color:${pDiscColor}">${(pa.peer_verdict||'').replace(/_/g,' ')}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Composite Discount</span>
+            <span class="metric-value" style="color:${pDiscColor}">${pDisc !== null && pDisc !== undefined ? pDisc.toFixed(1) + '%' : '—'}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Sector P/E Median</span>
+            <span class="metric-value">${pa.sector_median_pe ? pa.sector_median_pe.toFixed(1) + 'x' : '—'}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">P/E vs Peers</span>
+            <span class="metric-value ${pa.company_pe_discount_pct > 0 ? 'good' : 'bad'}">${pa.company_pe_discount_pct !== null && pa.company_pe_discount_pct !== undefined ? pa.company_pe_discount_pct.toFixed(1) + '% discount' : '—'}</span>
+          </div>
+        </div>
+        ${(pa.peers_used||[]).length ? `<div style="font-size:11px;color:var(--text3);margin-top:6px;">Peers: ${(pa.peers_used||[]).slice(0,6).join(', ')}</div>` : ''}
+      </div>` : ''}
+
+      <!-- Technical Analysis -->
+      ${tv ? `
+      <div class="result-section">
+        <h4>Technical Analysis</h4>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <span style="font-size:13px;font-weight:600;color:${tvColor}">${(tv||'').replace(/_/g,' ')}</span>
+          ${ta.entry_signal ? `<span style="font-size:11px;padding:2px 8px;border-radius:4px;background:${tv === 'strong_entry' ? 'var(--green-dim)' : tv === 'overbought' || tv === 'avoid_entry' ? 'var(--red-dim)' : 'var(--surface2)'};color:${tvColor};border:1px solid ${tvColor};">${ta.entry_signal}</span>` : ''}
+        </div>
+        <div class="metric-grid">
+          <div class="metric">
+            <span class="metric-label">RSI (14)</span>
+            <span class="metric-value" style="color:${taRsiColor}">${taRsi !== null && taRsi !== undefined ? taRsi.toFixed(1) : '—'}${taRsi !== null && taRsi !== undefined ? (taRsi >= 70 ? ' ⚠' : taRsi <= 30 ? ' ✓' : '') : ''}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">MA Cross</span>
+            <span class="metric-value" style="color:${taCrossColor}">${(ta.cross_signal || '—').replace(/_/g,' ')}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">MA 50</span>
+            <span class="metric-value">${ta.ma_50 ? '$' + ta.ma_50.toFixed(2) : '—'}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">MA 200</span>
+            <span class="metric-value">${ta.ma_200 ? '$' + ta.ma_200.toFixed(2) : '—'}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">52W Position</span>
+            <span class="metric-value" style="color:${taPos52Color}">${taPos52 !== null && taPos52 !== undefined ? (taPos52 * 100).toFixed(0) + '%' : '—'}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Vol Ratio (20/90d)</span>
+            <span class="metric-value ${ta.volume_ratio > 1.2 ? 'good' : ta.volume_ratio < 0.8 ? 'bad' : ''}">${ta.volume_ratio !== null && ta.volume_ratio !== undefined ? ta.volume_ratio.toFixed(2) + 'x' : '—'}</span>
+          </div>
+        </div>
+        ${(ta.technical_supports||[]).length ? `<div style="font-size:11px;color:var(--green);margin-top:6px;">${(ta.technical_supports||[]).map(s=>`<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 6px;background:var(--green-dim);border-radius:4px;">+ ${s}</span>`).join('')}</div>` : ''}
+        ${(ta.technical_risks||[]).length ? `<div style="font-size:11px;color:var(--red);margin-top:4px;">${(ta.technical_risks||[]).map(r=>`<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 6px;background:var(--red-dim);border-radius:4px;">− ${r}</span>`).join('')}</div>` : ''}
+      </div>` : ''}
 
       <!-- Sentiment -->
       <div class="result-section">
@@ -1460,49 +2224,95 @@ function buildTickerCard(ticker, fa, sa, raw) {
         </div>` : ''}
       </div>
 
-      <!-- Key ratios -->
+      <!-- Key ratios & margins -->
       <div class="result-section">
-        <h4>Key Ratios</h4>
+        <h4>Financial Health</h4>
         <div class="metric-grid">
           ${Object.entries(ratios).map(([k, v]) => {
             const pass = v.pass;
             return `<div class="metric">
               <span class="metric-label">${k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</span>
-              <span class="metric-value ${pass ? 'good' : 'bad'}">${v.value}${k === 'roe' || k === 'current_ratio' || k === 'roic' ? '' : ''} ${pass ? '✓' : '✗'}</span>
+              <span class="metric-value ${pass ? 'good' : 'bad'}">${v.value} ${pass ? '✓' : '✗'}</span>
             </div>`;
           }).join('')}
           ${fa.gross_margin_pct !== null && fa.gross_margin_pct !== undefined ? `
-          <div class="metric">
-            <span class="metric-label">Gross Margin</span>
-            <span class="metric-value">${fa.gross_margin_pct}%</span>
-          </div>` : ''}
+          <div class="metric"><span class="metric-label">Gross Margin</span><span class="metric-value">${fa.gross_margin_pct}%</span></div>` : ''}
           ${fa.operating_margin_pct !== null && fa.operating_margin_pct !== undefined ? `
-          <div class="metric">
-            <span class="metric-label">Op. Margin</span>
-            <span class="metric-value">${fa.operating_margin_pct}%</span>
-          </div>` : ''}
+          <div class="metric"><span class="metric-label">Op. Margin</span><span class="metric-value">${fa.operating_margin_pct}%</span></div>` : ''}
+          ${fa.return_on_equity_pct !== null && fa.return_on_equity_pct !== undefined ? `
+          <div class="metric"><span class="metric-label">ROE</span><span class="metric-value ${fa.return_on_equity_pct >= 15 ? 'good' : ''}">${fa.return_on_equity_pct}%</span></div>` : ''}
+          ${fa.cash_flow_quality && fa.cash_flow_quality.quality ? `
+          <div class="metric"><span class="metric-label">CF Quality</span><span class="metric-value ${fa.cash_flow_quality.quality === 'high' ? 'good' : fa.cash_flow_quality.quality === 'low' ? 'bad' : ''}">${fa.cash_flow_quality.quality}</span></div>` : ''}
         </div>
       </div>
 
-      <!-- Insider & consensus -->
-      <div class="result-section">
-        <h4>Market Intelligence</h4>
-        ${sa.insider_activity ? `<div style="font-size:12px;color:var(--text2);margin-bottom:8px;"><strong style="color:var(--text3);">Insider:</strong> ${sa.insider_activity}</div>` : ''}
-        ${fa.confidence ? `<div style="font-size:12px;color:var(--text2);margin-bottom:8px;"><strong style="color:var(--text3);">Model confidence:</strong> ${fa.confidence}</div>` : ''}
-        ${fa.revenue_growth_pct !== null && fa.revenue_growth_pct !== undefined ? `<div style="font-size:12px;color:var(--text2);"><strong style="color:var(--text3);">Rev. growth:</strong> ${fa.revenue_growth_pct}% YoY</div>` : ''}
-      </div>
-
-      <!-- Reasoning -->
+      <!-- Agent Reasoning Accordion -->
       <div class="full-width-section">
-        <h4>Fundamental Reasoning</h4>
-        <p class="reasoning-text">${fa.reasoning || '—'}</p>
+        <h4>Agent Reasoning</h4>
+        <div class="reasoning-accordion">
+          ${fa.reasoning ? `
+          <div class="reasoning-section">
+            <div class="reasoning-header" onclick="toggleReasoning(this)">
+              <span class="reasoning-agent-label">Fundamental Analyst</span>
+              ${fa.confidence ? `<span class="confidence-badge conf-${fa.confidence}">${fa.confidence}</span>` : ''}
+              <span class="reasoning-expand">▾</span>
+            </div>
+            <div class="reasoning-body open">
+              <p class="reasoning-text">${fa.reasoning}</p>
+              ${fa.entry_strategy ? `<div class="entry-strategy-box"><strong>Entry Strategy:</strong> ${fa.entry_strategy}</div>` : ''}
+              ${fa.target_price_rationale ? `<div style="font-size:12px;color:var(--text2);margin-top:6px;"><strong>Target Rationale:</strong> ${fa.target_price_rationale}</div>` : ''}
+            </div>
+          </div>` : ''}
+          ${ga.reasoning ? `
+          <div class="reasoning-section">
+            <div class="reasoning-header" onclick="toggleReasoning(this)">
+              <span class="reasoning-agent-label">Growth Analyst</span>
+              ${ga.growth_quality_score !== undefined ? `<span class="growth-score-badge">${ga.growth_quality_score}/10</span>` : ''}
+              <span class="reasoning-expand">▾</span>
+            </div>
+            <div class="reasoning-body">
+              <p class="reasoning-text">${ga.reasoning}</p>
+              ${(ga.growth_risks||[]).length ? `<div style="margin-top:6px;"><strong style="font-size:11px;color:var(--red);">Growth Risks:</strong> ${ga.growth_risks.map(r=>`<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 6px;background:var(--red-dim);border-radius:4px;font-size:11px;">${r}</span>`).join('')}</div>` : ''}
+            </div>
+          </div>` : ''}
+          ${pa.reasoning ? `
+          <div class="reasoning-section">
+            <div class="reasoning-header" onclick="toggleReasoning(this)">
+              <span class="reasoning-agent-label">Peer Comparison</span>
+              ${pDisc !== null && pDisc !== undefined ? `<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:${pDisc > 0 ? 'var(--green-dim)' : 'var(--red-dim)'};color:${pDiscColor};">${pDisc > 0 ? '+' : ''}${pDisc.toFixed(1)}% vs peers</span>` : ''}
+              <span class="reasoning-expand">▾</span>
+            </div>
+            <div class="reasoning-body">
+              <p class="reasoning-text">${pa.reasoning}</p>
+              ${pa.peer_comparison_note ? `<div style="font-size:11px;color:var(--text3);margin-top:4px;">${pa.peer_comparison_note}</div>` : ''}
+            </div>
+          </div>` : ''}
+          ${ta.reasoning ? `
+          <div class="reasoning-section">
+            <div class="reasoning-header" onclick="toggleReasoning(this)">
+              <span class="reasoning-agent-label">Technical Analyst</span>
+              ${tv ? `<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:${tv === 'strong_entry' ? 'var(--green-dim)' : tv === 'overbought' || tv === 'avoid_entry' ? 'var(--red-dim)' : 'var(--surface2)'};color:${tvColor};">${tv.replace(/_/g,' ')}</span>` : ''}
+              <span class="reasoning-expand">▾</span>
+            </div>
+            <div class="reasoning-body">
+              <p class="reasoning-text">${ta.reasoning}</p>
+              ${(ta.technical_risks||[]).length ? `<div style="margin-top:6px;"><strong style="font-size:11px;color:var(--red);">Technical Risks:</strong> ${ta.technical_risks.map(r=>`<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 6px;background:var(--red-dim);border-radius:4px;font-size:11px;">${r}</span>`).join('')}</div>` : ''}
+            </div>
+          </div>` : ''}
+          ${sa.reasoning ? `
+          <div class="reasoning-section">
+            <div class="reasoning-header" onclick="toggleReasoning(this)">
+              <span class="reasoning-agent-label">Sentiment Analyst</span>
+              ${sa.sentiment_label ? `<span class="sentiment-label-badge" style="background:${sentBg};color:${sentColor};font-size:11px;">${sa.sentiment_label.replace('_',' ')}</span>` : ''}
+              <span class="reasoning-expand">▾</span>
+            </div>
+            <div class="reasoning-body">
+              <p class="reasoning-text">${sa.reasoning}</p>
+              ${sa.insider_activity ? `<div style="font-size:12px;color:var(--text2);margin-top:6px;"><strong>Insider:</strong> ${sa.insider_activity}</div>` : ''}
+            </div>
+          </div>` : ''}
+        </div>
       </div>
-
-      ${sa.reasoning ? `
-      <div class="full-width-section">
-        <h4>Sentiment Reasoning</h4>
-        <p class="reasoning-text">${sa.reasoning}</p>
-      </div>` : ''}
 
       ${(risks.length || strengths.length) ? `
       <div class="full-width-section">
@@ -1524,28 +2334,25 @@ function buildTickerCard(ticker, fa, sa, raw) {
   return card;
 }
 
+function toggleReasoning(header) {
+  const body = header.nextElementSibling;
+  if (!body) return;
+  const isOpen = body.classList.toggle('open');
+  const expand = header.querySelector('.reasoning-expand');
+  if (expand) expand.textContent = isOpen ? '▴' : '▾';
+}
+
 // ── Report viewer ────────────────────────────────────────────────────────
-async function loadReport(filename) {
+async function loadReport(filename, switchTab = true) {
   try {
     const res = await fetch(`/api/reports/${encodeURIComponent(filename)}`);
     const data = await res.json();
     if (data.error) return;
     currentReport = data;
-    renderReport(data.content, filename);
-
-    // Mark active in sidebar
-    document.querySelectorAll('.report-item').forEach(el => {
-      el.classList.toggle('active', el.dataset.filename === filename);
-    });
+    const viewer = document.getElementById('report-viewer');
+    viewer.innerHTML = `<div class="report-md">${mdToHtml(data.content)}</div>`;
+    if (switchTab) showTab('report', null);
   } catch(e) {}
-}
-
-function renderReport(markdown, filename) {
-  const viewer = document.getElementById('report-viewer');
-  viewer.innerHTML = `<div class="report-md">${mdToHtml(markdown)}</div>`;
-
-  // Switch to report tab
-  showTab('report', null);
 }
 
 // Very simple markdown → HTML (no deps)
@@ -1588,24 +2395,52 @@ function mdToHtml(md) {
     .join('\n');
 }
 
-// ── Past reports list ────────────────────────────────────────────────────
-async function loadReports() {
+// ── Past runs list ────────────────────────────────────────────────────────
+async function loadRuns() {
   try {
-    const res = await fetch('/api/reports');
-    const reports = await res.json();
-    const list = document.getElementById('reportsList');
-    if (!reports.length) {
-      list.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:4px 2px;">No reports yet</div>';
+    const res = await fetch('/api/runs');
+    if (!res.ok) throw new Error();
+    const runs = await res.json();
+    const list = document.getElementById('runsList');
+    if (!runs.length) {
+      list.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px 2px;">No runs yet</div>';
       return;
     }
-    list.innerHTML = reports.map(r => `
-      <div class="report-item ${currentReport?.filename === r.filename ? 'active' : ''}"
-           data-filename="${r.filename}"
-           onclick="loadReport('${r.filename}')">
-        <span class="report-date">${r.date}</span>
-        <span class="report-size">${r.size_kb}kb</span>
-      </div>`).join('');
-  } catch(e) {}
+    list.innerHTML = runs.map(r => {
+      const isActive = lastPipelineData?.results_filename === r.filename;
+      const chips = (r.tickers || []).map(t =>
+        `<span class="run-ticker-chip">${t}</span>`
+      ).join('');
+      // Format "2026-04-11_18-07-45" → "Apr 11  18:07"
+      const ts = r.run_ts || '';
+      let label = ts;
+      if (ts.length >= 16) {
+        // ts = "YYYY-MM-DD_HH-MM-SS"
+        const datePart = ts.slice(0, 10);   // "2026-04-11"
+        const timePart = ts.slice(11, 16);  // "18-07"
+        const [, mm, dd] = datePart.split('-');
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const monthName = months[parseInt(mm, 10) - 1] || mm;
+        label = `${monthName} ${parseInt(dd, 10)}  ${timePart.replace('-', ':')}`;
+      }
+      return `<div class="run-item ${isActive ? 'active' : ''}" id="run-item-${r.filename}">
+        <div class="run-item-top">
+          <span class="run-ts">${label}</span>
+          <span class="run-size">${r.size_kb}kb</span>
+        </div>
+        <div class="run-tickers">${chips || '<span style="color:var(--text3);font-size:10px;">no tickers</span>'}</div>
+        <div class="run-actions">
+          <button class="run-action-btn" onclick="loadAndRenderRun('${r.filename}', document.getElementById('run-item-${r.filename}'))">
+            📊 Results
+          </button>
+          ${r.report_filename ? `<button class="run-action-btn" onclick="loadReport('${r.report_filename}')">📄 Report</button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('runsList').innerHTML =
+      '<div style="color:var(--text3);font-size:12px;padding:8px 2px;">Could not load runs</div>';
+  }
 }
 
 // ── Tabs ─────────────────────────────────────────────────────────────────
@@ -1651,7 +2486,42 @@ function onCountryChange() {
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────
-loadReports();
+// Load runs list and auto-restore the most recent run's results.
+(async function init() {
+  await loadRuns();
+
+  // Auto-load the most recent run so results are visible on page load/refresh
+  try {
+    const res = await fetch('/api/runs');
+    if (!res.ok) return;
+    const runs = await res.json();
+    if (!runs.length) return;
+    const latest = runs[0];
+    const data = await loadRunFile(latest.filename);
+    if (!data) return;
+
+    allResults       = data.all_results || {};
+    lastPipelineData = {
+      tickers_succeeded: data.tickers_succeeded || [],
+      tickers_failed:    data.tickers_failed    || [],
+      report_filename:   data.report_filename   || '',
+      results_filename:  latest.filename,
+      summary:           data.summary           || '',
+      screen_results:    data.screen_results    || [],
+    };
+
+    _doRenderResults(lastPipelineData);
+
+    // Silently pre-load the linked report into the viewer
+    if (data.report_filename) {
+      loadReport(data.report_filename, false);
+    }
+
+    // Mark the run item as active in the sidebar
+    const item = document.getElementById(`run-item-${latest.filename}`);
+    if (item) item.classList.add('active');
+  } catch(e) {}
+})();
 </script>
 </body>
 </html>

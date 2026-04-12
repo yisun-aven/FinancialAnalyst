@@ -15,49 +15,66 @@ cd financial-analyst
 cp .env.example .env
 # Edit .env — fill in ANTHROPIC_API_KEY and ALPHA_VANTAGE_API_KEY
 
-# 3. Install dependencies (Python 3.11+ required)
+# 3. Install Python dependencies (Python 3.11+ required)
 python -m venv .venv
 source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-# 4. Start the web UI (recommended)
-python web/app.py
-# → Opens at http://localhost:8000
-# Use Manual mode to analyse specific tickers, or Discover mode to screen
-# US (S&P 500 / Nasdaq 100) or Taiwan (TWSE + OTC) for undervalued stocks.
+# 4. Install frontend dependencies (Node.js 20.19+ required)
+cd frontend && npm install && cd ..
 
-# 5. Run the full daily pipeline (headless / scheduled)
+# 5. Start both servers (two separate terminals)
+
+#   Terminal 1 — FastAPI backend  (scripts/serve.py wraps uvicorn)
+python scripts/serve.py
+# → API running at http://localhost:8000
+# → Swagger docs at http://localhost:8000/docs
+
+#   Terminal 2 — React frontend  (Vite dev server, proxies /api + /ws to :8000)
+cd frontend && npm run dev
+# → UI running at http://localhost:5173
+
+# 6. Run the full daily pipeline (headless / scheduled)
 python scripts/run_daily.py
 
-# 6. (Dev) Run a single agent
+# 7. (Dev) Run a single agent
 python scripts/run_agent.py --agent data_collector --ticker AAPL
 ```
 
 Reports are written to `outputs/YYYY-MM-DD_HH-MM-SS_analyst_report.md` and are
-viewable in the web UI under the **Report** tab or the **Past Reports** sidebar.
+viewable in the web UI under the **Report** tab.
 
 ## Web UI
 
-```bash
-python web/app.py
-```
+The frontend is a React + TypeScript + Ant Design app (`frontend/`) that communicates
+with the FastAPI backend (`web/app.py`) via REST and WebSocket.
 
-| URL | Description |
-|-----|-------------|
-| `http://localhost:8000` | Main UI |
-| `http://localhost:8000/api/reports` | JSON list of saved reports |
-| `http://localhost:8000/api/reports/<filename>` | Fetch a specific report |
+| Server | URL | Description |
+|--------|-----|-------------|
+| Frontend (Vite) | `http://localhost:5173` | React UI (dev) |
+| Backend (FastAPI) | `http://localhost:8000` | API + WebSocket |
+| Backend API docs | `http://localhost:8000/docs` | Swagger UI |
 
 **Modes:**
-- **Manual** — enter up to 10 tickers and run the full pipeline immediately.
-- **Discover** — select a country (🇺🇸 US or 🇹🇼 Taiwan), optionally filter by
-  sector and market cap, then let the screener rank stocks by value score before
-  running the full pipeline on the top N picks.
+- **Manual** — enter tickers (type + Enter, or pick from quick-add), click Analyse.
+- **Discover** — choose a universe (S&P 500, Nasdaq 100, Global Large Cap, etc.),
+  set filters (sector, region, min market cap, top N), click Screen & Analyse.
 
-> The server uses `uvicorn` under the hood. For production or always-on use:
-> ```bash
-> uvicorn web.app:app --host 0.0.0.0 --port 8000
-> ```
+**Tabs:**
+- **Live Feed** — real-time WebSocket events from each agent as the pipeline runs.
+- **Screen** — sortable table of all screened stocks with scores and key ratios.
+- **Results** — per-ticker cards with valuation metrics, target price gauge, growth,
+  peer comparison, technical indicators, sentiment, and full agent reasoning.
+- **Report** — rendered markdown analyst report; load any past report from the dropdown.
+
+**Sidebar — Past Runs** — click any past run to restore its results instantly.
+
+### Production build
+
+```bash
+cd frontend && npm run build
+# Outputs to frontend/dist/ — can be served by any static host or FastAPI StaticFiles
+```
 
 ## Agent Architecture
 
@@ -126,19 +143,33 @@ financial-analyst/
 │   ├── orchestrator.py
 │   ├── data_collector.py
 │   ├── fundamental_analyst.py
+│   ├── growth_analyst.py
+│   ├── peer_comparison.py
+│   ├── technical_analyst.py
 │   ├── sentiment_analyst.py
 │   └── report_writer.py
 ├── tools/                     # Standalone tool functions (no Claude calls)
 │   ├── market_data.py         # yfinance + Alpha Vantage
 │   ├── sec_filings.py         # SEC EDGAR
+│   ├── screener.py            # Universe screening + value scoring
 │   ├── web_search.py
 │   └── calculations.py        # P/E, DCF, ratios (pure functions)
 ├── prompts/                   # System prompts (*.md — never inline in code)
+├── web/
+│   └── app.py                 # FastAPI backend (REST + WebSocket)
+├── frontend/                  # React + TypeScript + Ant Design UI
+│   ├── src/
+│   │   ├── types/             # TypeScript types for WS events and REST
+│   │   ├── api/               # fetch wrappers + useWebSocket hook
+│   │   ├── store/             # Zustand pipeline state
+│   │   └── components/        # layout, sidebar, feed, screen, results, report
+│   └── vite.config.ts         # Proxies /api and /ws to backend
 ├── outputs/                   # Generated reports (gitignored)
 ├── tests/
 └── scripts/
     ├── run_daily.py           # Full pipeline entry point
-    └── run_agent.py           # Single-agent dev runner
+    ├── run_agent.py           # Single-agent dev runner
+    └── serve.py               # uvicorn launcher with hot-reload
 ```
 
 ## Environment Variables
