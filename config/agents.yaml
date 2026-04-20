@@ -86,6 +86,57 @@ agents:
       - fetch_analyst_ratings
     prompt_file: prompts/sentiment_analyst.md
 
+  # ── AI Value Chain agents ──────────────────────────────────────────────
+  # These 5 agents add the AI value chain lens on top of the classic fundamentals
+  # to surface structural pricing gaps / market mistakes about the future of AI.
+  # The layer_classifier runs first and gates whether the 4 downstream agents run
+  # (it short-circuits for NEUTRAL / MINIMAL AI exposure to save API cost).
+
+  layer_classifier:
+    name: layer_classifier
+    role: "Classifies the company into one of 7 AI value chain layers (or NEUTRAL) and sets the analytical lens for the downstream AI agents"
+    model_env_var: MODEL_ANALYST
+    max_tokens: 2048
+    temperature: 0.1
+    tools_allowed: []
+    prompt_file: prompts/layer_classifier.md
+
+  value_creation_analyst:
+    name: value_creation_analyst
+    role: "Scores current and future (AI-scenario) economic value creation; classifies the company's AI role"
+    model_env_var: MODEL_ANALYST
+    max_tokens: 3072
+    temperature: 0.15
+    tools_allowed: []
+    prompt_file: prompts/value_creation_analyst.md
+
+  value_capture_analyst:
+    name: value_capture_analyst
+    role: "Measures how much of the created value flows to the company's P&L today and in 3-5y (pricing power, leakage, commoditization)"
+    model_env_var: MODEL_ANALYST
+    max_tokens: 3072
+    temperature: 0.15
+    tools_allowed: []
+    prompt_file: prompts/value_capture_analyst.md
+
+  pricing_gap_analyst:
+    name: pricing_gap_analyst
+    role: "Core market-mistake detector: compares market-implied scenario vs AI-scenario implied by the value chain framework"
+    model_env_var: MODEL_ANALYST
+    max_tokens: 3072
+    temperature: 0.2
+    tools_allowed: []
+    prompt_file: prompts/pricing_gap_analyst.md
+
+  ai_risk_analyst:
+    name: ai_risk_analyst
+    role: "Identifies AI-specific structural risks (commoditization, displacement, capex trap, geopolitical, moat erosion) not covered by the base risk agents"
+    model_env_var: MODEL_ANALYST
+    max_tokens: 3072
+    temperature: 0.15
+    tools_allowed: []
+    prompt_file: prompts/ai_risk_analyst.md
+
   report_writer:
     name: report_writer
     role: "Generates a formatted daily analyst report in markdown from all agent outputs"

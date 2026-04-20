@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -59,6 +59,7 @@ def _save_results(
     report_filename: str,
     summary: str,
     screen_results: list | None = None,
+    ranking: list | None = None,
 ) -> str:
     """Persist agent outputs to a JSON file alongside the markdown report.
 
@@ -77,6 +78,7 @@ def _save_results(
         "report_filename": report_filename,
         "summary": summary,
         "screen_results": screen_results or [],
+        "ranking": ranking or [],
     }
     path = _results_dir() / filename
     path.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
@@ -162,6 +164,186 @@ async def get_report(filename: str) -> JSONResponse:
     return JSONResponse({"filename": filename, "content": path.read_text(encoding="utf-8")})
 
 
+
+# ── User profile endpoints ─────────────────────────────────────────────────
+
+_USER_FILE = _PROJECT_ROOT / "database" / "user_profile.json"
+
+
+def _load_user() -> dict:
+    if _USER_FILE.exists():
+        return json.loads(_USER_FILE.read_text(encoding="utf-8"))
+    return {}
+
+
+def _save_user(data: dict) -> None:
+    _USER_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _USER_FILE.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
+
+
+@app.get("/api/user")
+async def get_user() -> JSONResponse:
+    if not _USER_FILE.exists():
+        return JSONResponse({"error": "Not found"}, status_code=404)
+    return JSONResponse(_load_user())
+
+
+@app.put("/api/user")
+async def put_user(request: Request) -> JSONResponse:
+    body = await request.json()
+    _save_user(body)
+    return JSONResponse({"ok": True})
+
+
+# ── Ticker search endpoint ─────────────────────────────────────────────────
+
+# Maps region key → yfinance exchange suffix (empty string = US, no suffix needed)
+_REGION_SUFFIX: dict[str, str] = {
+    "US": "",
+    "TW": ".TW",
+    "TWO": ".TWO",   # Taiwan OTC
+    "HK": ".HK",
+    "JP": ".T",
+    "KR": ".KS",
+    "CN": ".SS",     # Shanghai
+    "CNS": ".SZ",    # Shenzhen
+    "UK": ".L",
+    "DE": ".DE",
+    "FR": ".PA",
+    "AU": ".AX",
+    "CA": ".TO",
+    "IN": ".NS",     # NSE India
+    "SG": ".SI",
+}
+
+
+@app.get("/api/search")
+async def search_tickers(q: str = "", region: str = "US") -> JSONResponse:
+    """Search for tickers by name/symbol within a region using yfinance."""
+    q = q.strip()
+    if not q or len(q) < 1:
+        return JSONResponse([])
+
+    import yfinance as yf
+
+    suffix = _REGION_SUFFIX.get(region.upper(), "")
+
+    # yfinance search returns candidates; we filter by exchange suffix
+    try:
+        results = yf.Search(q, max_results=20).quotes
+    except Exception:
+        results = []
+
+    out = []
+    for r in results:
+        sym: str = r.get("symbol", "")
+        name: str = r.get("longname") or r.get("shortname") or ""
+        exchange: str = r.get("exchange", "")
+        q_type: str = r.get("quoteType", "")
+
+        # For US: accept symbols with no dot suffix (plain NYSE/NASDAQ symbols)
+        if region.upper() == "US":
+            if "." in sym:
+                continue
+            # Skip crypto, futures, etc. unless user explicitly wants them
+            if q_type in ("CRYPTOCURRENCY", "FUTURE", "INDEX"):
+                continue
+        else:
+            # For non-US: require the correct suffix
+            if not sym.endswith(suffix):
+                continue
+
+        out.append({
+            "symbol": sym,
+            "name": name,
+            "exchange": exchange,
+            "type": q_type,
+        })
+
+    return JSONResponse(out[:15])
+
+
+# ── FX rates endpoint ─────────────────────────────────────────────────────
+
+@app.get("/api/fx")
+async def get_fx_rates(currencies: str = "") -> JSONResponse:
+    """Return USD conversion rates for a comma-separated list of ISO currency codes.
+
+    Uses yfinance forex pairs (e.g. TWDUSD=X) to get the latest rate.
+    Always returns rates as: 1 unit of <currency> = N USD.
+    USD itself is always 1.0.
+    """
+    import yfinance as yf
+
+    currency_list = [c.strip().upper() for c in currencies.split(",") if c.strip()]
+    # Always include USD
+    if "USD" not in currency_list:
+        currency_list.append("USD")
+
+    rates: dict[str, float | None] = {"USD": 1.0}
+
+    for ccy in currency_list:
+        if ccy == "USD":
+            continue
+        # GBp (pence) is a special case — 100 pence = 1 GBP, and GBPUSD=X gives GBP/USD
+        if ccy == "GBp":
+            try:
+                pair = "GBPUSD=X"
+                info = yf.Ticker(pair).fast_info
+                gbp_usd = getattr(info, "last_price", None)
+                rates["GBp"] = round(float(gbp_usd) / 100, 8) if gbp_usd else None
+            except Exception:
+                rates["GBp"] = None
+            continue
+        try:
+            pair = f"{ccy}USD=X"
+            info = yf.Ticker(pair).fast_info
+            rate = getattr(info, "last_price", None)
+            rates[ccy] = round(float(rate), 8) if rate is not None else None
+        except Exception:
+            rates[ccy] = None
+
+    return JSONResponse(rates)
+
+
+# ── Live price endpoint ────────────────────────────────────────────────────
+
+@app.get("/api/prices")
+async def get_prices(tickers: str = "") -> JSONResponse:
+    """Fetch current price + day change for a comma-separated list of tickers."""
+    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not ticker_list:
+        return JSONResponse([])
+
+    import yfinance as yf
+
+    results = []
+    for ticker in ticker_list:
+        try:
+            t = yf.Ticker(ticker)
+            info = t.fast_info
+            price = getattr(info, "last_price", None)
+            prev_close = getattr(info, "previous_close", None)
+            currency = getattr(info, "currency", None) or (t.info or {}).get("currency", "USD")
+            if price is not None and prev_close is not None and prev_close != 0:
+                change = round(price - prev_close, 4)
+                change_pct = round((change / prev_close) * 100, 2)
+            else:
+                change = None
+                change_pct = None
+            results.append({
+                "ticker": ticker,
+                "price": round(price, 4) if price is not None else None,
+                "change": change,
+                "changePct": change_pct,
+                "currency": currency,
+            })
+        except Exception as exc:
+            results.append({"ticker": ticker, "price": None, "change": None, "changePct": None, "currency": "USD", "error": str(exc)})
+
+    return JSONResponse(results)
+
+
 @app.websocket("/ws/run")
 async def run_pipeline_ws(websocket: WebSocket) -> None:
     await websocket.accept()
@@ -201,12 +383,18 @@ async def run_pipeline_ws(websocket: WebSocket) -> None:
             if ticker not in _agent_outputs:
                 _agent_outputs[ticker] = {}
             KEY_MAP = {
-                "fundamental_analyst": "fundamental",
-                "growth_analyst":      "growth",
-                "peer_comparison":     "peers",
-                "technical_analyst":   "technical",
-                "sentiment_analyst":   "sentiment",
-                "data_collector":      "raw",
+                "fundamental_analyst":    "fundamental",
+                "growth_analyst":         "growth",
+                "peer_comparison":        "peers",
+                "technical_analyst":      "technical",
+                "sentiment_analyst":      "sentiment",
+                "data_collector":         "raw",
+                "layer_classifier":       "layer",
+                "value_creation_analyst": "value_creation",
+                "value_capture_analyst":  "value_capture",
+                "pricing_gap_analyst":    "pricing_gap",
+                "ai_risk_analyst":        "ai_risk",
+                "orchestrator":           "synthesis",
             }
             if agent in KEY_MAP:
                 _agent_outputs[ticker][KEY_MAP[agent]] = data
@@ -235,9 +423,11 @@ async def run_pipeline_ws(websocket: WebSocket) -> None:
                     all_results=_agent_outputs,
                     report_filename=report_filename,
                     summary=result.get("summary", ""),
+                    ranking=(result.get("synthesis") or {}).get("ranking"),
                 )
             except Exception:
                 pass
+            synthesis = result.get("synthesis", {}) or {}
             emit({
                 "type": "pipeline_complete",
                 "agent": "orchestrator",
@@ -247,7 +437,10 @@ async def run_pipeline_ws(websocket: WebSocket) -> None:
                     "results_filename": results_filename,
                     "tickers_succeeded": result.get("tickers_succeeded", []),
                     "tickers_failed": result.get("tickers_failed", []),
+                    "tickers_ranked": result.get("tickers_ranked", []),
                     "summary": result.get("summary", ""),
+                    "ranking": synthesis.get("ranking", []),
+                    "all_results": _agent_outputs,
                 },
                 "timestamp": _now(),
             })
@@ -323,12 +516,18 @@ async def screen_and_run_ws(websocket: WebSocket) -> None:
             if ticker not in _agent_outputs_s:
                 _agent_outputs_s[ticker] = {}
             KEY_MAP = {
-                "fundamental_analyst": "fundamental",
-                "growth_analyst":      "growth",
-                "peer_comparison":     "peers",
-                "technical_analyst":   "technical",
-                "sentiment_analyst":   "sentiment",
-                "data_collector":      "raw",
+                "fundamental_analyst":    "fundamental",
+                "growth_analyst":         "growth",
+                "peer_comparison":        "peers",
+                "technical_analyst":      "technical",
+                "sentiment_analyst":      "sentiment",
+                "data_collector":         "raw",
+                "layer_classifier":       "layer",
+                "value_creation_analyst": "value_creation",
+                "value_capture_analyst":  "value_capture",
+                "pricing_gap_analyst":    "pricing_gap",
+                "ai_risk_analyst":        "ai_risk",
+                "orchestrator":           "synthesis",
             }
             if agent in KEY_MAP:
                 _agent_outputs_s[ticker][KEY_MAP[agent]] = data
@@ -411,6 +610,27 @@ async def screen_and_run_ws(websocket: WebSocket) -> None:
             orch = OrchestratorAgent(cfg["orchestrator"], settings, event_callback=agent_emit_and_collect)
             result = orch.run({"tickers": top_tickers, "run_date": run_date})
 
+            # ── Re-rank the screener table by the AI-aware conviction score ───────
+            synthesis = result.get("synthesis", {}) or {}
+            ranking = synthesis.get("ranking", []) or []
+            if ranking:
+                rank_map = {r["ticker"]: i for i, r in enumerate(ranking)}
+                top_stocks_ranked = sorted(
+                    top_stocks,
+                    key=lambda s: rank_map.get(s.get("ticker"), 10**6),
+                )
+                # Enrich each screener row with the conviction fields
+                per_ticker = synthesis.get("per_ticker", {}) or {}
+                for row in top_stocks_ranked:
+                    block = per_ticker.get(row.get("ticker"), {})
+                    row["conviction_score"] = block.get("conviction_score")
+                    row["recommendation"] = block.get("recommendation")
+                    row["ai_gap_score"] = (block.get("components") or {}).get("gap_score")
+                    row["primary_layer"] = (block.get("components") or {}).get("primary_layer")
+                top_stocks_final = top_stocks_ranked
+            else:
+                top_stocks_final = top_stocks
+
             report_filename = Path(result.get("report_path", "x")).name
             results_filename = ""
             try:
@@ -421,7 +641,8 @@ async def screen_and_run_ws(websocket: WebSocket) -> None:
                     all_results=_agent_outputs_s,
                     report_filename=report_filename,
                     summary=result.get("summary", ""),
-                    screen_results=top_stocks,
+                    screen_results=top_stocks_final,
+                    ranking=ranking,
                 )
             except Exception:
                 pass
@@ -435,8 +656,11 @@ async def screen_and_run_ws(websocket: WebSocket) -> None:
                     "results_filename": results_filename,
                     "tickers_succeeded": result.get("tickers_succeeded", []),
                     "tickers_failed": result.get("tickers_failed", []),
+                    "tickers_ranked": result.get("tickers_ranked", []),
                     "summary": result.get("summary", ""),
-                    "screen_results": top_stocks,
+                    "screen_results": top_stocks_final,
+                    "ranking": ranking,
+                    "all_results": _agent_outputs_s,
                 },
                 "timestamp": _now(),
             })

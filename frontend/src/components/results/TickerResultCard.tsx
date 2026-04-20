@@ -64,12 +64,68 @@ function TargetPriceGauge({ current, bear, base, bull }: { current?: number | nu
   )
 }
 
+const RECOMMENDATION_COLOR: Record<string, string> = {
+  BUY:        '#16a34a',
+  ACCUMULATE: '#0f9960',
+  HOLD:       '#b45309',
+  TRIM:       '#c2410c',
+  AVOID:      '#dc2626',
+}
+
+function RecommendationTag({ rec, score }: { rec?: string; score?: number }) {
+  if (!rec) return null
+  const color = RECOMMENDATION_COLOR[rec] ?? '#8a909e'
+  return (
+    <Tag
+      style={{
+        background: `${color}14`,
+        color,
+        borderColor: color,
+        fontWeight: 700,
+        fontSize: 12,
+        letterSpacing: '0.05em',
+      }}
+    >
+      {rec}
+      {typeof score === 'number' && ` ${score >= 0 ? '+' : ''}${score.toFixed(1)}`}
+    </Tag>
+  )
+}
+
+function GapBar({ score }: { score?: number }) {
+  if (typeof score !== 'number') return null
+  const clamped = Math.max(-10, Math.min(10, score))
+  const leftPct = ((clamped + 10) / 20) * 100
+  const color = clamped > 2 ? '#16a34a' : clamped < -2 ? '#dc2626' : '#b45309'
+  return (
+    <div style={{ marginTop: 6 }}>
+      <div style={{ position: 'relative', height: 10, background: '#f0f2f5', borderRadius: 5, border: '1px solid #e8eaed' }}>
+        {/* center tick */}
+        <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: 1, background: '#dde1e7' }} />
+        <div style={{ position: 'absolute', top: -4, bottom: -4, left: `${leftPct}%`, width: 4, background: color, borderRadius: 2, transform: 'translateX(-50%)', boxShadow: `0 0 6px ${color}` }} />
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#8a909e', fontFamily: 'monospace', marginTop: 2 }}>
+        <span>-10 OVER</span><span>0</span><span>+10 UNDER</span>
+      </div>
+    </div>
+  )
+}
+
 export default function TickerResultCard({ ticker, results }: Props) {
   const fa = results.fundamental ?? {}
   const ga = results.growth ?? {}
   const pa = results.peers ?? {}
   const ta = results.technical ?? {}
   const sa = results.sentiment ?? {}
+  const layer = results.layer ?? {}
+  const vcr = results.value_creation ?? {}
+  const vcp = results.value_capture ?? {}
+  const pg = results.pricing_gap ?? {}
+  const ar = results.ai_risk ?? {}
+  const syn = results.synthesis ?? {}
+
+  const aiSkipped = !!(pg.skipped || vcr.skipped || vcp.skipped)
+  const hasAiBlock = Object.keys(layer).length > 0 || Object.keys(syn).length > 0
 
   const sentColorMap: Record<string, string> = {
     very_bullish: '#16a34a', bullish: '#16a34a',
@@ -84,14 +140,21 @@ export default function TickerResultCard({ ticker, results }: Props) {
       styles={{ body: { padding: 0 } }}
     >
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: '1px solid #e8eaed', background: '#f7f8fa' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: '1px solid #e8eaed', background: '#f7f8fa', flexWrap: 'wrap' }}>
         <Title level={4} style={{ margin: 0, fontFamily: 'monospace', color: '#1a1d23' }}>{ticker}</Title>
         {fa.current_price && (
           <Text style={{ fontSize: 16, fontFamily: 'monospace', color: '#4a5060' }}>
             ${fa.current_price.toFixed(2)}
           </Text>
         )}
+        {layer.primary_layer && (
+          <Tag style={{ fontSize: 11, fontFamily: 'monospace', borderColor: '#4f6ef7', color: '#4f6ef7', background: '#4f6ef712' }}>
+            {layer.primary_layer}
+            {layer.primary_layer !== 'NEUTRAL' && layer.primary_layer_label ? ` · ${layer.primary_layer_label}` : ''}
+          </Tag>
+        )}
         <div style={{ flex: 1 }} />
+        <RecommendationTag rec={syn.recommendation} score={syn.conviction_score} />
         <VerdictTag verdict={fa.valuation_verdict} />
         {ga.growth_verdict && (
           <Tag color={ga.growth_verdict === 'strong_growth' ? 'green' : ga.growth_verdict === 'declining' ? 'red' : 'gold'} style={{ fontSize: 11 }}>
@@ -270,6 +333,165 @@ export default function TickerResultCard({ ticker, results }: Props) {
                 ))}
               </Col>
             </Row>
+          </Col>
+        )}
+
+        {/* AI Value Chain */}
+        {hasAiBlock && (
+          <Col span={24} style={{ padding: '14px 16px', borderBottom: '1px solid #e8eaed', background: '#fafbfe' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <Text style={{ fontSize: 11, color: '#4f6ef7', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                AI Value Chain
+              </Text>
+              {layer.ai_exposure_type && (
+                <Tag style={{ fontSize: 10, margin: 0 }} color={layer.ai_exposure_type === 'DIRECT' ? 'blue' : layer.ai_exposure_type === 'INDIRECT' ? 'cyan' : 'default'}>
+                  {layer.ai_exposure_type} · {layer.ai_exposure_score ?? 0}/100
+                </Tag>
+              )}
+            </div>
+
+            {aiSkipped ? (
+              <Text style={{ fontSize: 12, color: '#8a909e', fontStyle: 'italic' }}>
+                AI-specific analysis skipped — this company has NEUTRAL / MINIMAL AI exposure.
+                Classic fundamental + growth signals remain authoritative.
+              </Text>
+            ) : (
+              <>
+                <Row gutter={[16, 12]}>
+                  {/* Pricing Gap (headline signal) */}
+                  <Col xs={24} md={12}>
+                    <Text style={{ fontSize: 11, color: '#8a909e', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      Pricing Gap
+                    </Text>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 4 }}>
+                      <Text style={{ fontSize: 22, fontWeight: 700, fontFamily: 'monospace', color: (pg.gap_score ?? 0) > 2 ? '#16a34a' : (pg.gap_score ?? 0) < -2 ? '#dc2626' : '#b45309' }}>
+                        {pg.gap_score != null ? `${pg.gap_score >= 0 ? '+' : ''}${pg.gap_score}` : '—'}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#4a5060' }}>
+                        {pg.gap_direction?.replace(/_/g, ' ')}
+                        {pg.gap_magnitude ? ` · ${pg.gap_magnitude}` : ''}
+                      </Text>
+                    </div>
+                    <GapBar score={pg.gap_score} />
+                    <Row gutter={8} style={{ marginTop: 8 }}>
+                      <Col span={12}>
+                        <MetricCard label="Market implied growth" value={pg.market_implied_growth_rate_pct != null ? `${pg.market_implied_growth_rate_pct.toFixed(1)}%` : '—'} />
+                      </Col>
+                      <Col span={12}>
+                        <MetricCard label="AI-scenario growth" value={pg.ai_scenario_growth_rate_pct != null ? `${pg.ai_scenario_growth_rate_pct.toFixed(1)}%` : '—'} color="#4f6ef7" />
+                      </Col>
+                      <Col span={12}>
+                        <MetricCard label="Uncertainty" value={pg.uncertainty_driver ?? '—'} color={pg.uncertainty_driver === 'STRUCTURAL' ? '#16a34a' : pg.uncertainty_driver === 'SPECULATIVE' ? '#dc2626' : undefined} />
+                      </Col>
+                      <Col span={12}>
+                        <MetricCard label="Horizon" value={pg.time_horizon ?? '—'} />
+                      </Col>
+                    </Row>
+                    {pg.key_rerating_catalyst && (
+                      <div style={{ marginTop: 8, fontSize: 12, color: '#4a5060', lineHeight: 1.45 }}>
+                        <Text style={{ fontSize: 10, color: '#8a909e', fontWeight: 600, textTransform: 'uppercase', display: 'block' }}>Catalyst</Text>
+                        {pg.key_rerating_catalyst}
+                      </div>
+                    )}
+                  </Col>
+
+                  {/* Creation / Capture scores */}
+                  <Col xs={24} md={12}>
+                    <Text style={{ fontSize: 11, color: '#8a909e', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      Value Creation / Capture
+                    </Text>
+                    <Row gutter={[12, 8]} style={{ marginTop: 4 }}>
+                      <Col span={12}>
+                        <MetricCard
+                          label="Creation now → future"
+                          value={`${vcr.current_creation_score ?? '—'} → ${vcr.future_creation_score ?? '—'}`}
+                          color="#4f6ef7"
+                        />
+                        <Text style={{ fontSize: 10, color: '#8a909e' }}>
+                          {vcr.current_creation_label} · ceiling {vcr.future_creation_ceiling?.replace(/_/g, ' ')}
+                        </Text>
+                      </Col>
+                      <Col span={12}>
+                        <MetricCard
+                          label="Capture now → future"
+                          value={`${vcp.current_capture_score ?? '—'} → ${vcp.future_capture_score ?? '—'}`}
+                          color={vcp.future_capture_trajectory === 'EXPANDING' ? '#16a34a' : vcp.future_capture_trajectory === 'COMPRESSING' ? '#dc2626' : undefined}
+                        />
+                        <Text style={{ fontSize: 10, color: '#8a909e' }}>
+                          {vcp.current_capture_rate} · {vcp.future_capture_trajectory?.toLowerCase()}
+                        </Text>
+                      </Col>
+                      <Col span={12}>
+                        <MetricCard label="AI role" value={vcr.ai_role?.replace(/_/g, ' ') ?? '—'} />
+                      </Col>
+                      <Col span={12}>
+                        <MetricCard
+                          label="Commoditization risk"
+                          value={vcp.commoditization_risk ?? '—'}
+                          color={vcp.commoditization_risk === 'HIGH' ? '#dc2626' : vcp.commoditization_risk === 'LOW' ? '#16a34a' : undefined}
+                        />
+                      </Col>
+                    </Row>
+                    {vcr.key_moat && (
+                      <Text style={{ fontSize: 11, color: '#4a5060', display: 'block', marginTop: 6, fontStyle: 'italic' }}>
+                        Moat: {vcr.key_moat}
+                      </Text>
+                    )}
+                    {vcp.value_leakage_source && vcp.value_leakage_source.toLowerCase() !== 'none' && (
+                      <Text style={{ fontSize: 11, color: '#4a5060', display: 'block', marginTop: 2 }}>
+                        Leakage: {vcp.value_leakage_source}
+                      </Text>
+                    )}
+                  </Col>
+                </Row>
+
+                {/* AI Risk */}
+                {(ar.overall_risk_level || (ar.risks ?? []).length > 0) && (
+                  <>
+                    <Divider style={{ margin: '12px 0', borderColor: '#e8eaed' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                      <Text style={{ fontSize: 11, color: '#8a909e', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        AI Risk
+                      </Text>
+                      {ar.overall_risk_level && (
+                        <Tag color={ar.overall_risk_level === 'CRITICAL' ? 'red' : ar.overall_risk_level === 'HIGH' ? 'volcano' : ar.overall_risk_level === 'MODERATE' ? 'gold' : 'green'} style={{ fontSize: 10, margin: 0 }}>
+                          {ar.overall_risk_level} · {ar.risk_score ?? 0}/100
+                        </Tag>
+                      )}
+                    </div>
+                    {ar.primary_risk && (
+                      <Text style={{ fontSize: 12, color: '#4a5060', display: 'block', marginBottom: 6 }}>
+                        <strong>Primary:</strong> {ar.primary_risk}
+                      </Text>
+                    )}
+                    {(ar.risks ?? []).filter(r => r.severity === 'CRITICAL' || r.severity === 'HIGH').slice(0, 3).map((r, i) => (
+                      <div key={i} style={{ fontSize: 12, color: '#4a5060', marginBottom: 3, display: 'flex', gap: 6 }}>
+                        <span style={{ width: 4, height: 4, borderRadius: '50%', background: r.severity === 'CRITICAL' ? '#dc2626' : '#c2410c', flexShrink: 0, marginTop: 6 }} />
+                        <span>
+                          <strong>{r.risk_type?.replace(/_/g, ' ')}</strong> ({r.severity}/{r.likelihood} · {r.timeline}) — {r.description}
+                        </span>
+                      </div>
+                    ))}
+                    {ar.thesis_breaker && (
+                      <Text style={{ fontSize: 11, color: '#8a909e', display: 'block', marginTop: 6, fontStyle: 'italic' }}>
+                        Thesis breaker: {ar.thesis_breaker}
+                      </Text>
+                    )}
+                  </>
+                )}
+
+                {/* Synthesis thesis */}
+                {syn.thesis && (
+                  <>
+                    <Divider style={{ margin: '12px 0', borderColor: '#e8eaed' }} />
+                    <Text style={{ fontSize: 11, color: '#4f6ef7', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 4 }}>
+                      Conviction Thesis
+                    </Text>
+                    <Text style={{ fontSize: 13, color: '#1a1d23', lineHeight: 1.5 }}>{syn.thesis}</Text>
+                  </>
+                )}
+              </>
+            )}
           </Col>
         )}
 

@@ -5,13 +5,19 @@ import { usePipelineStore } from '../../store/pipelineStore'
 const { Text } = Typography
 
 const STAGES = [
-  { key: 'Data Collection',      label: 'Data Collection' },
-  { key: 'Fundamental Analysis', label: 'Fundamental Analysis' },
-  { key: 'Growth Analysis',      label: 'Growth Analysis' },
-  { key: 'Peer Comparison',      label: 'Peer Comparison' },
-  { key: 'Technical Analysis',   label: 'Technical Analysis' },
-  { key: 'Sentiment Analysis',   label: 'Sentiment Analysis' },
-  { key: 'Report Writing',       label: 'Report Writing' },
+  { key: 'Data Collection',          label: 'Data Collection',      group: 'core' },
+  { key: 'Fundamental Analysis',     label: 'Fundamental Analysis', group: 'core' },
+  { key: 'Growth Analysis',          label: 'Growth Analysis',      group: 'core' },
+  { key: 'Peer Comparison',          label: 'Peer Comparison',      group: 'core' },
+  { key: 'Technical Analysis',       label: 'Technical Analysis',   group: 'core' },
+  { key: 'Sentiment Analysis',       label: 'Sentiment Analysis',   group: 'core' },
+  { key: 'AI Layer Classification',  label: 'AI Layer Classifier',  group: 'ai' },
+  { key: 'Value Creation Analysis',  label: 'Value Creation',       group: 'ai' },
+  { key: 'Value Capture Analysis',   label: 'Value Capture',        group: 'ai' },
+  { key: 'AI Pricing Gap Analysis',  label: 'AI Pricing Gap',       group: 'ai' },
+  { key: 'AI Risk Analysis',         label: 'AI Risk',              group: 'ai' },
+  { key: 'Conviction Synthesis',     label: 'Conviction Synthesis', group: 'synth' },
+  { key: 'Report Writing',           label: 'Report Writing',       group: 'core' },
 ]
 
 export default function PipelineProgress() {
@@ -43,6 +49,12 @@ export default function PipelineProgress() {
         {STAGES.map((stage, idx) => {
           const isDone   = isComplete || idx < currentStageIdx
           const isActive = !isComplete && idx === currentStageIdx
+          const prevGroup = idx > 0 ? STAGES[idx - 1].group : null
+          const showGroupLabel = prevGroup !== null && prevGroup !== stage.group
+          const groupLabel =
+            stage.group === 'ai' ? 'AI Value Chain'
+            : stage.group === 'synth' ? 'Synthesis'
+            : null
 
           let icon: React.ReactNode
           let labelColor: string
@@ -63,8 +75,17 @@ export default function PipelineProgress() {
           }
 
           return (
+            <div key={stage.key}>
+              {showGroupLabel && groupLabel && (
+                <Text style={{
+                  fontSize: 9, color: stage.group === 'ai' ? '#4f6ef7' : '#7c3aed',
+                  fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
+                  display: 'block', marginTop: 8, marginBottom: 4, marginLeft: 8,
+                }}>
+                  {groupLabel}
+                </Text>
+              )}
             <div
-              key={stage.key}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -101,6 +122,7 @@ export default function PipelineProgress() {
                   done
                 </Text>
               )}
+            </div>
             </div>
           )
         })}

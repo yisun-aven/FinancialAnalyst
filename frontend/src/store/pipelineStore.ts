@@ -27,7 +27,7 @@ export interface PipelineStore {
   summary: string | null
 
   // Active tab
-  activeTab: 'feed' | 'screen' | 'results' | 'report'
+  activeTab: 'watchlist' | 'portfolio' | 'feed' | 'screen' | 'results' | 'report'
 
   // Past runs (from REST)
   pastRuns: RunSummary[]
@@ -38,7 +38,7 @@ export interface PipelineStore {
   addEvent: (e: WsEnvelope) => void
   setScreenResults: (stocks: ScreenStock[]) => void
   setPipelineComplete: (data: PipelineCompleteData) => void
-  setActiveTab: (tab: PipelineStore['activeTab']) => void
+  setActiveTab: (tab: PipelineStore['activeTab'] | string) => void
   setPastRuns: (runs: RunSummary[]) => void
   loadRunDetail: (allResults: Record<string, AllResults>, tickers: string[], report: string, content?: string) => void
   setReportContent: (content: string | null) => void
@@ -57,7 +57,7 @@ const initialState = {
   reportContent: null,
   resultsFilename: null,
   summary: null,
-  activeTab: 'feed' as const,
+  activeTab: 'watchlist' as const,
   pastRuns: [] as RunSummary[],
 }
 
@@ -96,7 +96,7 @@ export const usePipelineStore = create<PipelineStore>((set) => ({
       reportFilename: report,
       reportContent: content ?? null,
       status: 'complete',
-      activeTab: 'results',
+      activeTab: 'results' as PipelineStore['activeTab'],
     }),
 
   setReportContent: (reportContent) => set({ reportContent }),

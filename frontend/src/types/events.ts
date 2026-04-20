@@ -86,9 +86,11 @@ export interface PipelineCompleteData {
   results_filename: string
   tickers_succeeded: string[]
   tickers_failed: string[]
+  tickers_ranked?: string[]
   summary: string
   screen_results?: ScreenStock[]
   all_results?: Record<string, AllResults>
+  ranking?: RankingEntry[]
 }
 export interface PipelineCompleteEvent extends WsEnvelope { type: 'pipeline_complete'; data: PipelineCompleteData }
 
@@ -168,12 +170,114 @@ export interface SentimentResult {
   reasoning?: string
 }
 
+// ── AI Value Chain agent shapes ───────────────────────────────────────────
+
+export type AILayer = 'L1' | 'L2' | 'L3' | 'L4' | 'L5' | 'L6' | 'L7' | 'NEUTRAL'
+export type AIExposureType = 'DIRECT' | 'INDIRECT' | 'MINIMAL'
+
+export interface LayerResult {
+  primary_layer?: AILayer
+  primary_layer_label?: string
+  secondary_layer?: AILayer | null
+  layer_confidence?: number
+  ai_exposure_type?: AIExposureType
+  ai_exposure_score?: number
+  layer_rationale?: string
+  activate_ai_agents?: boolean
+  layer_specific_focus?: string
+}
+
+export interface ValueCreationResult {
+  current_creation_score?: number
+  current_creation_label?: 'FOUNDATIONAL' | 'ENABLING' | 'INCREMENTAL' | 'MARGINAL'
+  future_creation_ceiling?: 'VERY_HIGH' | 'HIGH' | 'MODERATE' | 'LIMITED'
+  future_creation_score?: number
+  ai_role?: 'BUILDING_AI_INFRA' | 'ACCELERATED_BY_AI' | 'DISRUPTED_BY_AI' | 'NEUTRAL'
+  tam_expansion_potential?: 'EXPONENTIAL' | 'LINEAR' | 'FLAT' | 'SHRINKING'
+  creation_thesis?: string
+  key_moat?: string
+  skipped?: boolean
+  skipped_reason?: string
+}
+
+export interface ValueCaptureResult {
+  current_capture_rate?: 'HIGH' | 'MED' | 'LOW'
+  current_capture_score?: number
+  future_capture_trajectory?: 'EXPANDING' | 'STABLE' | 'COMPRESSING'
+  future_capture_score?: number
+  pricing_power_rating?: 'STRONG' | 'MODERATE' | 'WEAK' | 'NONE'
+  commoditization_risk?: 'HIGH' | 'MED' | 'LOW'
+  value_leakage_source?: string
+  capture_thesis?: string
+  skipped?: boolean
+  skipped_reason?: string
+}
+
+export interface PricingGapResult {
+  market_implied_growth_rate_pct?: number | null
+  ai_scenario_growth_rate_pct?: number | null
+  gap_direction?: 'UNDERPRICED' | 'OVERPRICED' | 'FAIRLY_PRICED'
+  gap_magnitude?: 'SIGNIFICANT' | 'MODERATE' | 'MARGINAL'
+  gap_score?: number
+  consensus_vs_ai_scenario?: 'CONSENSUS_TOO_HIGH' | 'CONSENSUS_TOO_LOW' | 'ALIGNED'
+  pricing_narrative?: string
+  key_rerating_catalyst?: string
+  uncertainty_driver?: 'STRUCTURAL' | 'EXECUTION' | 'MACRO' | 'SPECULATIVE'
+  time_horizon?: 'SHORT' | 'MEDIUM' | 'LONG'
+  suggested_action?: 'BUY' | 'ACCUMULATE' | 'HOLD' | 'TRIM' | 'AVOID'
+  skipped?: boolean
+  skipped_reason?: string
+}
+
+export interface AIRiskItem {
+  risk_type?: string
+  severity?: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW'
+  likelihood?: 'HIGH' | 'MED' | 'LOW'
+  timeline?: string
+  description?: string
+  mitigant?: string
+}
+
+export interface AIRiskResult {
+  overall_risk_level?: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW'
+  risk_score?: number
+  primary_risk?: string
+  risks?: AIRiskItem[]
+  bear_case_scenario?: string
+  thesis_breaker?: string
+  skipped?: boolean
+  skipped_reason?: string
+}
+
+export interface SynthesisResult {
+  conviction_score?: number
+  recommendation?: 'BUY' | 'ACCUMULATE' | 'HOLD' | 'TRIM' | 'AVOID'
+  thesis?: string
+  components?: Record<string, unknown>
+  adjustments?: string[]
+}
+
+export interface RankingEntry {
+  ticker: string
+  conviction_score: number
+  recommendation: string
+  thesis: string
+  gap_score?: number | null
+  primary_layer?: AILayer | null
+}
+
 export interface AllResults {
   fundamental?: FundamentalResult
   growth?: GrowthResult
   peers?: PeerResult
   technical?: TechnicalResult
   sentiment?: SentimentResult
+  layer?: LayerResult
+  value_creation?: ValueCreationResult
+  value_capture?: ValueCaptureResult
+  pricing_gap?: PricingGapResult
+  ai_risk?: AIRiskResult
+  synthesis?: SynthesisResult
   raw?: Record<string, unknown>
 }
 

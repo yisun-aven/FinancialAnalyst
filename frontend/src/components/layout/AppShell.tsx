@@ -8,6 +8,8 @@ import {
   StockOutlined,
   SearchOutlined,
   EditOutlined,
+  StarOutlined,
+  WalletOutlined,
 } from '@ant-design/icons'
 import { usePipelineStore } from '../../store/pipelineStore'
 import ManualRunForm from '../sidebar/ManualRunForm'
@@ -18,6 +20,8 @@ import LiveFeed from '../feed/LiveFeed'
 import ScreenTable from '../screen/ScreenTable'
 import ResultsPanel from '../results/ResultsPanel'
 import ReportViewer from '../report/ReportViewer'
+import WatchlistTab from '../watchlist/WatchlistTab'
+import PortfolioTab from '../portfolio/PortfolioTab'
 
 const { Header, Sider, Content } = Layout
 const { Text, Title } = Typography
@@ -38,6 +42,26 @@ export default function AppShell() {
   const resultsCount = Object.keys(allResults).length
 
   const tabItems = [
+    {
+      key: 'watchlist',
+      label: (
+        <Space size={6}>
+          <StarOutlined />
+          Watchlist
+        </Space>
+      ),
+      children: <WatchlistTab isActive={activeTab === 'watchlist'} />,
+    },
+    {
+      key: 'portfolio',
+      label: (
+        <Space size={6}>
+          <WalletOutlined />
+          Portfolio
+        </Space>
+      ),
+      children: <PortfolioTab isActive={activeTab === 'portfolio'} />,
+    },
     {
       key: 'feed',
       label: (

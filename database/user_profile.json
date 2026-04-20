@@ -1,0 +1,100 @@
+{
+  "name": "",
+  "watchlist": [
+    {
+      "ticker": "TSM",
+      "alertPrice": 355,
+      "alertDirection": "below",
+      "tag": "Buy",
+      "note": "\u7f8e\u80a1 Buy ADR under 355 USD",
+      "addedAt": "2026-04-12T06:47:11.864Z"
+    },
+    {
+      "ticker": "2330.TW",
+      "region": "TW",
+      "alertPrice": 1800.1,
+      "alertDirection": "below",
+      "tag": "Buy",
+      "note": "\u53f0\u80a1 \u8cb7\u53f0\u7a4d\u96fb\u4f4e\u65bc1800 NTD",
+      "addedAt": "2026-04-12T07:26:31.053Z"
+    },
+    {
+      "ticker": "MU",
+      "region": "US",
+      "alertPrice": 360,
+      "alertDirection": "below",
+      "tag": "Buy",
+      "note": "\u7f8e\u5149\n",
+      "addedAt": "2026-04-15T03:22:56.771Z"
+    }
+  ],
+  "portfolio": [
+    {
+      "ticker": "TSLA",
+      "shares": 22.3025,
+      "avgCostBasis": 381.12,
+      "note": "",
+      "addedAt": "2026-04-12T06:48:33.056Z"
+    },
+    {
+      "ticker": "0050.TW",
+      "region": "TW",
+      "shares": 1847,
+      "avgCostBasis": 60.1,
+      "note": "",
+      "addedAt": "2026-04-12T07:06:52.724Z"
+    },
+    {
+      "ticker": "00646.TW",
+      "region": "TW",
+      "shares": 2025,
+      "avgCostBasis": 64.6,
+      "note": "",
+      "addedAt": "2026-04-12T07:13:51.814Z"
+    }
+  ],
+  "createdAt": "2026-04-12T06:44:56.585Z",
+  "updatedAt": "2026-04-15T03:22:56.771Z",
+  "soldPositions": [
+    {
+      "ticker": "TSLA",
+      "region": "US",
+      "shares": 7.0002,
+      "avgCostBasis": 437.55,
+      "soldPrice": 453.84,
+      "soldAt": "2026-01-12T08:00:00.000Z",
+      "note": "",
+      "id": "5c8a0d76-233b-4b03-9894-1de5f802680f"
+    },
+    {
+      "ticker": "NVDA",
+      "region": "US",
+      "shares": 11.3192,
+      "avgCostBasis": 176.69,
+      "soldPrice": 191.81,
+      "soldAt": "2026-02-11T08:00:00.000Z",
+      "note": "",
+      "id": "bdc42f96-03c9-4e55-8ad4-f06f6619fa4c"
+    },
+    {
+      "ticker": "GOOGL",
+      "region": "US",
+      "shares": 12.7341,
+      "avgCostBasis": 303.02,
+      "soldPrice": 317.92,
+      "soldAt": "2026-04-08T07:00:00.000Z",
+      "note": "",
+      "id": "af342899-8d84-479e-8950-fa4802792cc7"
+    },
+    {
+      "ticker": "TSM",
+      "region": "US",
+      "shares": 4.7345,
+      "avgCostBasis": 316.82,
+      "soldPrice": 364.82,
+      "soldAt": "2026-04-08T07:00:00.000Z",
+      "note": "",
+      "id": "e52a1808-a561-4501-956a-3ee4f40f7106"
+    }
+  ]
+}

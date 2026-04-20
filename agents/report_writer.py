@@ -22,6 +22,12 @@ class ReportWriterInput(TypedDict):
     growth_analysis: dict[str, Any]
     peer_comparison: dict[str, Any]
     sentiment_analysis: dict[str, Any]
+    layer_classification: dict[str, Any]
+    value_creation: dict[str, Any]
+    value_capture: dict[str, Any]
+    pricing_gap: dict[str, Any]
+    ai_risk: dict[str, Any]
+    synthesis: dict[str, Any]
 
 
 class ReportWriterOutput(TypedDict):
@@ -42,8 +48,17 @@ class ReportWriterAgent(BaseAgent):
         peers = context.get("peer_comparison", {})
         sentiment = context.get("sentiment_analysis", {})
         macro = context.get("macro_data", {})
+        layer = context.get("layer_classification", {})
+        creation = context.get("value_creation", {})
+        capture = context.get("value_capture", {})
+        pricing_gap = context.get("pricing_gap", {})
+        ai_risk = context.get("ai_risk", {})
+        synthesis = context.get("synthesis", {})
 
-        prompt = self._build_prompt(tickers, run_date, fundamental, growth, peers, sentiment, macro)
+        prompt = self._build_prompt(
+            tickers, run_date, fundamental, growth, peers, sentiment, macro,
+            layer, creation, capture, pricing_gap, ai_risk, synthesis,
+        )
         logger.info("[%s] Generating report for %d tickers", self.name, len(tickers))
 
         report_markdown = self.call_claude(
@@ -75,13 +90,26 @@ class ReportWriterAgent(BaseAgent):
         peers: dict[str, Any],
         sentiment: dict[str, Any],
         macro: dict[str, Any],
+        layer: dict[str, Any],
+        creation: dict[str, Any],
+        capture: dict[str, Any],
+        pricing_gap: dict[str, Any],
+        ai_risk: dict[str, Any],
+        synthesis: dict[str, Any],
     ) -> str:
         blocks = []
+        synthesis_per_ticker = (synthesis or {}).get("per_ticker", {})
         for t in tickers:
             fa = fundamental.get(t, {})
             ga = growth.get(t, {})
             pa = peers.get(t, {})
             sa = sentiment.get(t, {})
+            lc = layer.get(t, {})
+            vcr = creation.get(t, {})
+            vcp = capture.get(t, {})
+            pg = pricing_gap.get(t, {})
+            ar = ai_risk.get(t, {})
+            syn = synthesis_per_ticker.get(t, {})
 
             # Detect currency from ticker suffix
             if t.endswith(".TW") or t.endswith(".TWO"):
@@ -132,12 +160,48 @@ class ReportWriterAgent(BaseAgent):
   headlines={json.dumps(sa.get('top_headlines',[])[:3])}
   reasoning={sa.get('reasoning','')}"""
 
+            # ── AI Value Chain block ──────────────────────────────────────────
+            ai_skipped = bool(pg.get("skipped") or vcr.get("skipped") or vcp.get("skipped"))
+            if ai_skipped:
+                ai_block = (
+                    f"AIValueChain: layer={lc.get('primary_layer')} ({lc.get('primary_layer_label')})\n"
+                    f"  ai_exposure={lc.get('ai_exposure_type')} "
+                    f"score={lc.get('ai_exposure_score')} — agents short-circuited (NEUTRAL / MINIMAL)."
+                )
+            else:
+                risks_summary = "; ".join(
+                    f"{r.get('risk_type')}({r.get('severity')}/{r.get('likelihood')})"
+                    for r in (ar.get("risks") or [])[:4]
+                )
+                ai_block = f"""AIValueChain:
+  Layer: {lc.get('primary_layer')} — {lc.get('primary_layer_label')} (conf {lc.get('layer_confidence')})
+  AI exposure: {lc.get('ai_exposure_type')} ({lc.get('ai_exposure_score')}/100)
+  Layer focus: {lc.get('layer_specific_focus','')}
+  Value creation: current {vcr.get('current_creation_score')} ({vcr.get('current_creation_label')}) / future {vcr.get('future_creation_score')} (ceiling {vcr.get('future_creation_ceiling')})
+    ai_role={vcr.get('ai_role')} tam={vcr.get('tam_expansion_potential')} moat={vcr.get('key_moat','')}
+  Value capture: current {vcp.get('current_capture_score')} ({vcp.get('current_capture_rate')}) / future {vcp.get('future_capture_score')} ({vcp.get('future_capture_trajectory')})
+    pricing_power={vcp.get('pricing_power_rating')} commoditization={vcp.get('commoditization_risk')} leakage={vcp.get('value_leakage_source','')}
+  Pricing Gap: {pg.get('gap_direction')} {pg.get('gap_magnitude')} score={pg.get('gap_score')}
+    market_implied={pg.get('market_implied_growth_rate_pct')}% ai_scenario={pg.get('ai_scenario_growth_rate_pct')}%
+    consensus_vs_ai_scenario={pg.get('consensus_vs_ai_scenario')} uncertainty={pg.get('uncertainty_driver')} horizon={pg.get('time_horizon')}
+    catalyst: {pg.get('key_rerating_catalyst','')}
+    narrative: {pg.get('pricing_narrative','')}
+    suggested_action: {pg.get('suggested_action')}
+  AI Risk: {ar.get('overall_risk_level')} (score {ar.get('risk_score')}/100)
+    primary_risk: {ar.get('primary_risk','')}
+    top_risks: {risks_summary or '—'}
+    thesis_breaker: {ar.get('thesis_breaker','')}
+    bear_case: {ar.get('bear_case_scenario','')}
+Synthesis: conviction={syn.get('conviction_score')} recommendation={syn.get('recommendation')}
+  thesis: {syn.get('thesis','')}"""
+
             blocks.append(f"""### {t} (currency: {currency})
 {price_note}
 {fundamental_block}
 {growth_block}
 {peer_block}
-{sentiment_block}""")
+{sentiment_block}
+{ai_block}""")
 
         if not blocks:
             ticker_section = "⚠️ No ticker data was passed to the report writer. This is a pipeline error — do not generate a blank report. List the error prominently."
@@ -150,17 +214,46 @@ class ReportWriterAgent(BaseAgent):
                 macro_lines.append(f"- {k.replace('_',' ').title()}: {v['value']}% ({v.get('date','')})")
         macro_text = "\n".join(macro_lines) or "Macro data unavailable."
 
+        # ── AI-aware ranked summary (from the deterministic synthesis step) ────
+        ranking = (synthesis or {}).get("ranking", [])
+        if ranking:
+            rank_lines = ["Rank | Ticker | Conviction | Recommendation | Layer | AI Gap | Thesis"]
+            for i, r in enumerate(ranking, start=1):
+                score = r.get("conviction_score")
+                score_fmt = f"{score:+.1f}" if isinstance(score, (int, float)) else "?"
+                gap = r.get("gap_score")
+                gap_fmt = f"{gap:+d}" if isinstance(gap, int) else (f"{gap:+.0f}" if isinstance(gap, float) else "—")
+                rank_lines.append(
+                    f"{i} | {r.get('ticker')} | {score_fmt} | {r.get('recommendation')} | "
+                    f"{r.get('primary_layer') or '—'} | {gap_fmt} | {r.get('thesis','')[:120]}"
+                )
+            ranking_text = "\n".join(rank_lines)
+        else:
+            ranking_text = "No synthesis ranking available."
+
         return f"""Generate a professional daily equity analyst report for {run_date}.
 
 ## Macro Environment
 {macro_text}
 
+## AI-Aware Conviction Ranking (deterministic synthesis)
+This ranking is computed in-process from the agent outputs using the weighting
+  final = 0.4·gap_score + 0.3·future_creation/10 + 0.2·future_capture/10 − 0.1·risk/10
+with adjustments for SPECULATIVE uncertainty, CRITICAL AI risk, and strong
+disagreement between the classic fundamental verdict and the AI lens.
+Use this as the primary ordering for the Executive Summary and the Top Picks table.
+
+{ranking_text}
+
 ## Ticker Data
 {ticker_section}
 
 Follow your system prompt format exactly. Date the report {run_date}.
-Include the full valuation table, growth profile, peer comparison, and entry strategy for each ticker.
-Use only the data provided — do not invent numbers."""
+Include the full valuation table, growth profile, peer comparison, AI value chain
+analysis, and entry strategy for each ticker. Use only the data provided —
+do not invent numbers. Where the `AIValueChain:` block says the agents
+short-circuited, honestly state that AI-specific analysis was skipped for that
+ticker rather than fabricating it."""
 
     def _save_report(self, markdown: str, run_date: str, tickers: list[str]) -> Path:
         out = self.settings.report_output_dir
@@ -177,9 +270,15 @@ Use only the data provided — do not invent numbers."""
         return path
 
     def _extract_summary(self, markdown: str) -> str:
+        """Pull the Executive Summary section out of the report.
+
+        The summary is rendered as markdown in the UI, so we keep the original
+        formatting (bold, bullet lists) and leave a generous character budget
+        instead of clipping mid-sentence.
+        """
         m = re.search(r"##\s+.*?Executive Summary.*?\n+(.*?)(?=\n##|\Z)", markdown, re.DOTALL | re.IGNORECASE)
         if m:
-            return m.group(1).strip()[:800]
+            return m.group(1).strip()
         try:
             return self.call_claude(
                 [{"role": "user", "content": f"Write a 3-sentence executive summary of this report:\n\n{markdown[:3000]}"}],
@@ -187,7 +286,7 @@ Use only the data provided — do not invent numbers."""
                 max_tokens=250, temperature=0.2,
             )
         except Exception:
-            return markdown[:400]
+            return markdown[:600]
 
 
 def _pct(v: Any) -> str:
