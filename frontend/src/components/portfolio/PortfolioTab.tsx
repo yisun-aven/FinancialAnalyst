@@ -47,12 +47,12 @@ function PnLText({ value, pct, sym = '$' }: { value: number | null; pct?: number
   const isUp = value >= 0
   const color = isUp ? '#16a34a' : '#dc2626'
   return (
-    <Space size={4}>
+    <Space size={4} style={{ whiteSpace: 'nowrap' }}>
       {isUp ? <ArrowUpOutlined style={{ color, fontSize: 10 }} /> : <ArrowDownOutlined style={{ color, fontSize: 10 }} />}
-      <Text style={{ color, fontWeight: 500 }}>
+      <Text style={{ color, fontWeight: 500, whiteSpace: 'nowrap' }}>
         {isUp ? '+' : '-'}{sym}{Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         {pct !== undefined && pct !== null && (
-          <Text style={{ color, fontSize: 11, marginLeft: 4 }}>
+          <Text style={{ color, fontSize: 11, marginLeft: 4, whiteSpace: 'nowrap' }}>
             ({isUp ? '+' : ''}{pct.toFixed(2)}%)
           </Text>
         )}
@@ -600,16 +600,16 @@ export default function PortfolioTab({ isActive }: PortfolioTabProps) {
       },
     },
     {
-      title: 'Current Price', key: 'currentPrice', width: 130,
+      title: 'Current Price', key: 'currentPrice', width: 150,
       render: (_: unknown, record: PortfolioPosition) => {
         const lp = livePrices[record.ticker]
         if (!lp?.price) return <Text style={{ color: '#8a909e' }}>—</Text>
         const isUp = (lp.changePct ?? 0) >= 0
         const sym = currencySymbolForTicker(record.ticker, lp.currency)
         return (
-          <Space direction="vertical" size={0}>
-            <Text strong style={{ fontSize: 13 }}>{sym}{lp.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}</Text>
-            <Text style={{ fontSize: 11, color: isUp ? '#16a34a' : '#dc2626' }}>
+          <Space direction="vertical" size={0} style={{ whiteSpace: 'nowrap' }}>
+            <Text strong style={{ fontSize: 13, whiteSpace: 'nowrap' }}>{sym}{lp.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}</Text>
+            <Text style={{ fontSize: 11, color: isUp ? '#16a34a' : '#dc2626', whiteSpace: 'nowrap' }}>
               {isUp ? '+' : ''}{lp.changePct?.toFixed(2)}% today
             </Text>
           </Space>
@@ -617,16 +617,16 @@ export default function PortfolioTab({ isActive }: PortfolioTabProps) {
       },
     },
     {
-      title: 'Market Value', key: 'marketValue', width: 130,
+      title: 'Market Value', key: 'marketValue', width: 150,
       render: (_: unknown, record: PortfolioPosition) => {
         const lp = livePrices[record.ticker]
         const pnl = computePnL(record, lp?.price ?? null, lp?.changePct ?? null, lp?.currency)
         if (pnl.marketValue === null) return <Text style={{ color: '#8a909e' }}>—</Text>
-        return <Text strong style={{ fontSize: 13 }}>{pnl.currencySym}{pnl.marketValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+        return <Text strong style={{ fontSize: 13, whiteSpace: 'nowrap' }}>{pnl.currencySym}{pnl.marketValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
       },
     },
     {
-      title: 'Unrealized P&L', key: 'unrealizedPnL', width: 170,
+      title: 'Unrealized P&L', key: 'unrealizedPnL', width: 210,
       render: (_: unknown, record: PortfolioPosition) => {
         const lp = livePrices[record.ticker]
         const pnl = computePnL(record, lp?.price ?? null, lp?.changePct ?? null, lp?.currency)
@@ -634,7 +634,7 @@ export default function PortfolioTab({ isActive }: PortfolioTabProps) {
       },
     },
     {
-      title: "Today's Change", key: 'dayChange', width: 150,
+      title: "Today's Change", key: 'dayChange', width: 200,
       render: (_: unknown, record: PortfolioPosition) => {
         const lp = livePrices[record.ticker]
         const pnl = computePnL(record, lp?.price ?? null, lp?.changePct ?? null, lp?.currency)
@@ -713,7 +713,7 @@ export default function PortfolioTab({ isActive }: PortfolioTabProps) {
       render: (v: string) => <Text style={{ fontSize: 12, color: '#4a5060' }}>{new Date(v).toLocaleDateString()}</Text>,
     },
     {
-      title: 'Realized P&L', key: 'realizedPnL', width: 170,
+      title: 'Realized P&L', key: 'realizedPnL', width: 210,
       render: (_: unknown, record: SoldPosition) => {
         const sym = currencySymbolForTicker(record.ticker)
         const pnl = (record.soldPrice - record.avgCostBasis) * record.shares
@@ -850,7 +850,7 @@ export default function PortfolioTab({ isActive }: PortfolioTabProps) {
         </Empty>
       ) : (
         <Table dataSource={portfolio} columns={activeColumns} rowKey="ticker" pagination={false} size="middle"
-          style={{ background: '#fff', borderRadius: 10, marginBottom: 8 }} scroll={{ x: 1000 }} />
+          style={{ background: '#fff', borderRadius: 10, marginBottom: 8 }} scroll={{ x: 'max-content' }} />
       )}
 
       <Divider style={{ margin: '28px 0' }} />
@@ -894,7 +894,7 @@ export default function PortfolioTab({ isActive }: PortfolioTabProps) {
         </Empty>
       ) : (
         <Table dataSource={soldPositions} columns={soldColumns} rowKey="id" pagination={false} size="middle"
-          style={{ background: '#fff', borderRadius: 10 }} scroll={{ x: 1000 }} />
+          style={{ background: '#fff', borderRadius: 10 }} scroll={{ x: 'max-content' }} />
       )}
 
       {/* ── Modals ── */}

@@ -31,14 +31,14 @@ function PriceCell({ ticker }: { ticker: string }) {
   const isUp = (lp.changePct ?? 0) >= 0
   const sym = currencySymbolForTicker(ticker, lp.currency)
   return (
-    <Space direction="vertical" size={0}>
-      <Text strong style={{ fontSize: 14 }}>{sym}{lp.price?.toLocaleString()}</Text>
-      <Space size={3}>
+    <Space direction="vertical" size={0} style={{ whiteSpace: 'nowrap' }}>
+      <Text strong style={{ fontSize: 14, whiteSpace: 'nowrap' }}>{sym}{lp.price?.toLocaleString()}</Text>
+      <Space size={3} style={{ whiteSpace: 'nowrap' }}>
         {isUp ? <ArrowUpOutlined style={{ color: '#16a34a', fontSize: 10 }} /> : <ArrowDownOutlined style={{ color: '#dc2626', fontSize: 10 }} />}
-        <Text style={{ fontSize: 11, color: isUp ? '#16a34a' : '#dc2626' }}>
+        <Text style={{ fontSize: 11, color: isUp ? '#16a34a' : '#dc2626', whiteSpace: 'nowrap' }}>
           {isUp ? '+' : ''}{lp.changePct?.toFixed(2)}%
         </Text>
-        <Text style={{ fontSize: 11, color: '#8a909e' }}>
+        <Text style={{ fontSize: 11, color: '#8a909e', whiteSpace: 'nowrap' }}>
           ({isUp ? '+' : ''}{sym}{lp.change?.toFixed(2)})
         </Text>
       </Space>
@@ -65,7 +65,7 @@ function AlertCell({ item }: { item: WatchlistItem }) {
   }
 
   return (
-    <Space size={4}>
+    <Space size={4} style={{ whiteSpace: 'nowrap' }}>
       {triggered ? (
         <Badge dot color="#5F8575">
           <BellFilled style={{ color: '#5F8575', fontSize: 14 }} />
@@ -73,7 +73,7 @@ function AlertCell({ item }: { item: WatchlistItem }) {
       ) : (
         <BellOutlined style={{ color: '#8a909e', fontSize: 14 }} />
       )}
-      <Text style={{ fontSize: 12, color: triggered ? '#5F8575' : '#4a5060', fontWeight: triggered ? 600 : 400 }}>
+      <Text style={{ fontSize: 12, color: triggered ? '#5F8575' : '#4a5060', fontWeight: triggered ? 600 : 400, whiteSpace: 'nowrap' }}>
         {item.alertDirection === 'above' ? '≥' : '≤'} {sym}{item.alertPrice.toLocaleString()}
         {triggered && ' ⚡ Triggered'}
       </Text>
@@ -282,13 +282,13 @@ export default function WatchlistTab({ isActive }: WatchlistTabProps) {
     {
       title: 'Price',
       key: 'price',
-      width: 200,
+      width: 230,
       render: (_: unknown, record: WatchlistItem) => <PriceCell ticker={record.ticker} />,
     },
     {
       title: 'Alert',
       key: 'alert',
-      width: 190,
+      width: 210,
       render: (_: unknown, record: WatchlistItem) => <AlertCell item={record} />,
     },
     {
@@ -403,6 +403,7 @@ export default function WatchlistTab({ isActive }: WatchlistTabProps) {
           pagination={false}
           size="middle"
           style={{ background: '#fff', borderRadius: 10 }}
+          scroll={{ x: 'max-content' }}
           rowClassName={(record) => {
             const lp = livePrices[record.ticker]
             if (!record.alertPrice || !lp?.price) return ''

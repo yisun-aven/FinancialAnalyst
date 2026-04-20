@@ -346,17 +346,106 @@ async def get_fx_rates(currencies: str = "") -> JSONResponse:
 
 # ── Live price endpoint ────────────────────────────────────────────────────
 
+def _fetch_twse_quote(ticker: str) -> dict | None:
+    """Fetch a near-live quote from TWSE MIS for a .TW / .TWO ticker.
+
+    Returns a normalized dict (same shape as the yfinance branch) or None on
+    any failure so the caller can fall back to yfinance.
+    TWSE MIS is delayed by roughly 20 seconds and requires no API key.
+    """
+    if not (ticker.endswith(".TW") or ticker.endswith(".TWO")):
+        return None
+
+    import requests
+
+    symbol = ticker.split(".")[0]
+    prefix = "tse" if ticker.endswith(".TW") else "otc"
+    ex_ch = f"{prefix}_{symbol}.tw"
+    url = (
+        "https://mis.twse.com.tw/stock/api/getStockInfo.jsp"
+        f"?ex_ch={ex_ch}&json=1&delay=0"
+    )
+    try:
+        resp = requests.get(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0",
+                "Referer": "https://mis.twse.com.tw/stock/fibest.jsp",
+            },
+            timeout=5,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception:
+        return None
+
+    arr = data.get("msgArray") or []
+    if not arr:
+        return None
+    q = arr[0]
+
+    def _f(key: str) -> float | None:
+        v = q.get(key)
+        if v in (None, "", "-"):
+            return None
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return None
+
+    price = _f("z")  # latest match price ("-" pre-open / halted)
+    if price is None:
+        # Pre-open: use mid of best bid/ask if available
+        bid_str = (q.get("b") or "").split("_")[0]
+        ask_str = (q.get("a") or "").split("_")[0]
+        try:
+            bid = float(bid_str) if bid_str not in ("", "-") else None
+            ask = float(ask_str) if ask_str not in ("", "-") else None
+        except ValueError:
+            bid = ask = None
+        if bid and ask:
+            price = (bid + ask) / 2
+
+    prev_close = _f("y")
+    if price is None or prev_close is None or prev_close == 0:
+        return None
+
+    change = round(price - prev_close, 4)
+    change_pct = round((change / prev_close) * 100, 2)
+    return {
+        "ticker": ticker,
+        "price": round(price, 4),
+        "change": change,
+        "changePct": change_pct,
+        "currency": "TWD",
+        "source": "twse",
+    }
+
+
 @app.get("/api/prices")
 async def get_prices(tickers: str = "") -> JSONResponse:
-    """Fetch current price + day change for a comma-separated list of tickers."""
+    """Fetch current price + day change for a comma-separated list of tickers.
+
+    Routing:
+      * `.TW` / `.TWO`  → TWSE MIS (near-live, ~20s delay), falls back to yfinance
+      * everything else → yfinance (~15 min delay)
+    """
     ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if not ticker_list:
-        return JSONResponse([])
+        return JSONResponse([], headers={"Cache-Control": "no-store"})
 
     import yfinance as yf
 
     results = []
     for ticker in ticker_list:
+        # 1) Try TWSE MIS for Taiwan-listed tickers
+        if ticker.endswith(".TW") or ticker.endswith(".TWO"):
+            twse_quote = await asyncio.to_thread(_fetch_twse_quote, ticker)
+            if twse_quote is not None:
+                results.append(twse_quote)
+                continue
+
+        # 2) Fallback: yfinance (also the default path for non-TW tickers)
         try:
             t = yf.Ticker(ticker)
             info = t.fast_info
@@ -375,11 +464,20 @@ async def get_prices(tickers: str = "") -> JSONResponse:
                 "change": change,
                 "changePct": change_pct,
                 "currency": currency,
+                "source": "yfinance",
             })
         except Exception as exc:
-            results.append({"ticker": ticker, "price": None, "change": None, "changePct": None, "currency": "USD", "error": str(exc)})
+            results.append({
+                "ticker": ticker,
+                "price": None,
+                "change": None,
+                "changePct": None,
+                "currency": "USD",
+                "source": "error",
+                "error": str(exc),
+            })
 
-    return JSONResponse(results)
+    return JSONResponse(results, headers={"Cache-Control": "no-store"})
 
 
 @app.websocket("/ws/run")

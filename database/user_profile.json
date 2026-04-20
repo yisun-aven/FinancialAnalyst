@@ -33,7 +33,7 @@
       "ticker": "TSLA",
       "shares": 22.3025,
       "avgCostBasis": 381.12,
-      "note": "",
+      "note": "\u5728 $500 \u5de6\u53f3\u8ce3\u51fa",
       "addedAt": "2026-04-12T06:48:33.056Z"
     },
     {
@@ -41,7 +41,7 @@
       "region": "TW",
       "shares": 1847,
       "avgCostBasis": 60.1,
-      "note": "",
+      "note": "\u9577\u671f HOLD",
       "addedAt": "2026-04-12T07:06:52.724Z"
     },
     {
@@ -49,12 +49,12 @@
       "region": "TW",
       "shares": 2025,
       "avgCostBasis": 64.6,
-      "note": "",
+      "note": "NTD 70 \u53ef\u51fa \u6539\u8cb7\u53f0\u7063\u80a1\u7968 \u6216 ETF\n",
       "addedAt": "2026-04-12T07:13:51.814Z"
     }
   ],
   "createdAt": "2026-04-12T06:44:56.585Z",
-  "updatedAt": "2026-04-15T03:22:56.771Z",
+  "updatedAt": "2026-04-20T01:15:40.033Z",
   "soldPositions": [
     {
       "ticker": "TSLA",
