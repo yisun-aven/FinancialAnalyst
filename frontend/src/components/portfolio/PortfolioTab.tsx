@@ -6,7 +6,7 @@ import {
 import {
   PlusOutlined, DeleteOutlined, EditOutlined,
   ReloadOutlined, ArrowUpOutlined, ArrowDownOutlined, WalletOutlined,
-  InfoCircleOutlined, HistoryOutlined, TrophyOutlined,
+  InfoCircleOutlined, HistoryOutlined, TrophyOutlined, CheckCircleOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { useUserStore } from '../../store/userStore'
@@ -243,6 +243,203 @@ function SoldModal({ open, initial, onClose }: SoldModalProps) {
   )
 }
 
+// ── Close Position modal (move active → sold at current price) ───────────────
+
+interface ClosePositionModalProps {
+  open: boolean
+  position: PortfolioPosition | null
+  livePrice: number | null
+  priceCurrency?: string
+  onClose: () => void
+}
+
+function ClosePositionModal({ open, position, livePrice, priceCurrency, onClose }: ClosePositionModalProps) {
+  const [form] = Form.useForm()
+  const addSoldPosition = useUserStore((s) => s.addSoldPosition)
+  const removePosition = useUserStore((s) => s.removePosition)
+  const updatePosition = useUserStore((s) => s.updatePosition)
+
+  const [sharesVal, setSharesVal] = useState<number | null>(null)
+  const [priceVal, setPriceVal] = useState<number | null>(null)
+
+  const currSym = position ? currencySymbolForTicker(position.ticker, priceCurrency) : '$'
+
+  useEffect(() => {
+    if (open && position) {
+      form.setFieldsValue({
+        shares: position.shares,
+        soldPrice: livePrice ?? null,
+        soldAt: dayjs(),
+        note: position.note ?? '',
+      })
+      setSharesVal(position.shares)
+      setPriceVal(livePrice ?? null)
+    }
+  }, [open, position, livePrice, form])
+
+  if (!position) return null
+
+  const maxShares = position.shares
+  const shares = sharesVal ?? 0
+  const sellPrice = priceVal ?? 0
+  const costBasis = shares * position.avgCostBasis
+  const proceeds = shares * sellPrice
+  const realizedPnL = proceeds - costBasis
+  const realizedPnLPct = position.avgCostBasis !== 0 ? ((sellPrice - position.avgCostBasis) / position.avgCostBasis) * 100 : null
+  const isFullClose = shares >= maxShares - 1e-9
+
+  const handleOk = () => {
+    form.validateFields().then((vals) => {
+      const sh = Number(vals.shares)
+      const sp = Number(vals.soldPrice)
+      if (sh <= 0 || sh > maxShares + 1e-9) {
+        message.error(`Shares must be between 0 and ${maxShares}`)
+        return
+      }
+      if (sp <= 0) {
+        message.error('Sell price must be greater than 0')
+        return
+      }
+
+      addSoldPosition({
+        ticker: position.ticker,
+        region: position.region,
+        shares: sh,
+        avgCostBasis: position.avgCostBasis,
+        soldPrice: sp,
+        soldAt: (vals.soldAt as dayjs.Dayjs).toISOString(),
+        note: vals.note ?? '',
+      })
+
+      if (sh >= maxShares - 1e-9) {
+        removePosition(position.ticker)
+        message.success(`${position.ticker} fully closed → moved to Sold Positions`)
+      } else {
+        updatePosition(position.ticker, { shares: maxShares - sh })
+        message.success(`Closed ${sh} shares of ${position.ticker} — ${maxShares - sh} remaining`)
+      }
+      onClose()
+    })
+  }
+
+  return (
+    <Modal
+      title={<Space><CheckCircleOutlined style={{ color: '#16a34a' }} /> Close Position — {position.ticker}</Space>}
+      open={open}
+      onOk={handleOk}
+      onCancel={onClose}
+      okText={isFullClose ? 'Close Full Position' : 'Close Partial'}
+      width={520}
+    >
+      {livePrice === null && (
+        <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: 12, color: '#92400e', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <InfoCircleOutlined />
+          Live price unavailable — please enter a sell price manually.
+        </div>
+      )}
+
+      <Form form={form} layout="vertical" style={{ marginTop: 4 }}>
+        <div style={{ background: '#f8fafc', borderRadius: 8, padding: '10px 12px', marginBottom: 16, fontSize: 12 }}>
+          <Space size={16} wrap>
+            <span><Text type="secondary">Holding:</Text> <Text strong>{maxShares.toLocaleString()} shares</Text></span>
+            <span><Text type="secondary">Avg cost:</Text> <Text strong>{currSym}{position.avgCostBasis.toLocaleString('en-US', { minimumFractionDigits: 2 })}</Text></span>
+            {livePrice !== null && (
+              <span><Text type="secondary">Current:</Text> <Text strong style={{ color: '#6366f1' }}>{currSym}{livePrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}</Text></span>
+            )}
+          </Space>
+        </div>
+
+        <Space style={{ width: '100%' }} size={8}>
+          <Form.Item name="shares" label="Shares to close" rules={[{ required: true, message: 'Enter shares' }]} style={{ flex: 1, marginBottom: 0 }}>
+            <InputNumber
+              min={0.0001}
+              max={maxShares}
+              precision={4}
+              style={{ width: '100%' }}
+              onChange={(v) => setSharesVal(typeof v === 'number' ? v : null)}
+              addonAfter={
+                <Button
+                  type="link"
+                  size="small"
+                  style={{ padding: 0, height: 'auto', fontSize: 11 }}
+                  onClick={() => { form.setFieldValue('shares', maxShares); setSharesVal(maxShares) }}
+                >
+                  All
+                </Button>
+              }
+            />
+          </Form.Item>
+          <Form.Item name="soldAt" label="Date sold" rules={[{ required: true, message: 'Enter date' }]} style={{ flex: 1, marginBottom: 0 }}>
+            <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
+        </Space>
+
+        <Form.Item
+          name="soldPrice"
+          label={`Sell price per share (${currSym})`}
+          rules={[{ required: true, message: 'Enter sell price' }]}
+          style={{ marginTop: 12, marginBottom: 0 }}
+        >
+          <InputNumber
+            min={0}
+            precision={2}
+            style={{ width: '100%' }}
+            onChange={(v) => setPriceVal(typeof v === 'number' ? v : null)}
+            addonAfter={
+              livePrice !== null ? (
+                <Button
+                  type="link"
+                  size="small"
+                  style={{ padding: 0, height: 'auto', fontSize: 11 }}
+                  onClick={() => { form.setFieldValue('soldPrice', livePrice); setPriceVal(livePrice) }}
+                >
+                  Use current
+                </Button>
+              ) : null
+            }
+          />
+        </Form.Item>
+
+        {/* Computed P&L preview */}
+        <div style={{ marginTop: 16, padding: '12px 14px', borderRadius: 8, background: realizedPnL >= 0 ? '#f0fdf4' : '#fef2f2', border: `1px solid ${realizedPnL >= 0 ? '#bbf7d0' : '#fecaca'}` }}>
+          <Text style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 6 }}>PREVIEW</Text>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            <div>
+              <Text style={{ fontSize: 11, color: '#64748b', display: 'block' }}>Cost Basis</Text>
+              <Text strong style={{ fontSize: 14 }}>{currSym}{costBasis.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+            </div>
+            <div>
+              <Text style={{ fontSize: 11, color: '#64748b', display: 'block' }}>Proceeds</Text>
+              <Text strong style={{ fontSize: 14 }}>{currSym}{proceeds.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+            </div>
+            <div>
+              <Text style={{ fontSize: 11, color: '#64748b', display: 'block' }}>Realized P&L</Text>
+              <Text strong style={{ fontSize: 14, color: realizedPnL >= 0 ? '#16a34a' : '#dc2626' }}>
+                {realizedPnL >= 0 ? '+' : '-'}{currSym}{Math.abs(realizedPnL).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {realizedPnLPct !== null && (
+                  <Text style={{ fontSize: 11, color: realizedPnL >= 0 ? '#16a34a' : '#dc2626', marginLeft: 4 }}>
+                    ({realizedPnL >= 0 ? '+' : ''}{realizedPnLPct.toFixed(2)}%)
+                  </Text>
+                )}
+              </Text>
+            </div>
+          </div>
+          {!isFullClose && shares > 0 && (
+            <Text style={{ fontSize: 11, color: '#64748b', display: 'block', marginTop: 8 }}>
+              Partial close — {(maxShares - shares).toLocaleString()} shares will remain in active holdings.
+            </Text>
+          )}
+        </div>
+
+        <Form.Item name="note" label="Note" style={{ marginTop: 16, marginBottom: 0 }}>
+          <textarea rows={2} placeholder="Optional note…" style={{ width: '100%', padding: '4px 11px', borderRadius: 6, border: '1px solid #dde1e7', fontSize: 14, fontFamily: 'inherit', resize: 'vertical', outline: 'none' }}
+            onChange={(e) => form.setFieldValue('note', e.target.value)} defaultValue={position.note ?? ''} />
+        </Form.Item>
+      </Form>
+    </Modal>
+  )
+}
+
 // ── Stats card row ────────────────────────────────────────────────────────────
 
 interface StatsRowProps {
@@ -291,6 +488,8 @@ export default function PortfolioTab({ isActive }: PortfolioTabProps) {
   const [editActive, setEditActive] = useState<PortfolioPosition | null>(null)
   const [soldModal, setSoldModal] = useState(false)
   const [editSold, setEditSold] = useState<SoldPosition | null>(null)
+  const [closeModal, setCloseModal] = useState(false)
+  const [closeTarget, setCloseTarget] = useState<PortfolioPosition | null>(null)
 
   useEffect(() => { loadFromServer() }, [loadFromServer])
 
@@ -452,14 +651,23 @@ export default function PortfolioTab({ isActive }: PortfolioTabProps) {
         ) : <Text style={{ color: '#c4c8d0', fontSize: 12 }}>—</Text>,
     },
     {
-      title: '', key: 'actions', width: 80,
+      title: '', key: 'actions', width: 120,
       render: (_: unknown, record: PortfolioPosition) => (
         <Space size={4}>
+          <Tooltip title="Close position at current price">
+            <Button
+              type="text"
+              size="small"
+              icon={<CheckCircleOutlined />}
+              onClick={() => { setCloseTarget(record); setCloseModal(true) }}
+              style={{ color: '#16a34a' }}
+            />
+          </Tooltip>
           <Tooltip title="Edit">
             <Button type="text" size="small" icon={<EditOutlined />} onClick={() => { setEditActive(record); setActiveModal(true) }} style={{ color: '#8a909e' }} />
           </Tooltip>
           <Popconfirm title={`Remove ${record.ticker}?`} onConfirm={() => { removePosition(record.ticker); message.success(`${record.ticker} removed`) }} okText="Remove" okButtonProps={{ danger: true }}>
-            <Tooltip title="Remove">
+            <Tooltip title="Remove (without recording sale)">
               <Button type="text" size="small" icon={<DeleteOutlined />} style={{ color: '#dc2626' }} />
             </Tooltip>
           </Popconfirm>
@@ -692,6 +900,13 @@ export default function PortfolioTab({ isActive }: PortfolioTabProps) {
       {/* ── Modals ── */}
       <AddEditModal open={activeModal} initial={editActive} onClose={() => { setActiveModal(false); setEditActive(null) }} />
       <SoldModal open={soldModal} initial={editSold} onClose={() => { setSoldModal(false); setEditSold(null) }} />
+      <ClosePositionModal
+        open={closeModal}
+        position={closeTarget}
+        livePrice={closeTarget ? livePrices[closeTarget.ticker]?.price ?? null : null}
+        priceCurrency={closeTarget ? livePrices[closeTarget.ticker]?.currency : undefined}
+        onClose={() => { setCloseModal(false); setCloseTarget(null) }}
+      />
     </div>
   )
 }

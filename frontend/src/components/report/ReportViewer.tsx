@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Empty, Spin, Select, Typography, Button, Alert } from 'antd'
-import { FileTextOutlined, ReloadOutlined } from '@ant-design/icons'
+import { Empty, Spin, Select, Typography, Button, Alert, message } from 'antd'
+import { FileTextOutlined, ReloadOutlined, DownloadOutlined } from '@ant-design/icons'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { api } from '../../api/rest'
@@ -41,6 +41,7 @@ export default function ReportViewer() {
   const [content, setContent]     = useState<string | null>(null)
   const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState<string | null>(null)
+  const [downloading, setDownloading] = useState(false)
 
   const lastFetched = useRef<string | null>(null)
 
@@ -64,6 +65,33 @@ export default function ReportViewer() {
 
   const refreshList = useCallback(() => {
     api.getReports().then(setReports).catch(() => {})
+  }, [])
+
+  const downloadPdf = useCallback(async (filename: string) => {
+    if (!filename) return
+    setDownloading(true)
+    try {
+      const res = await fetch(`/api/reports/${encodeURIComponent(filename)}/pdf`)
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+        throw new Error(body.error ?? `HTTP ${res.status}`)
+      }
+      const blob = await res.blob()
+      const pdfName = filename.replace(/\.md$/, '') + '.pdf'
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = pdfName
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      message.success(`Downloaded ${pdfName}`)
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'PDF download failed')
+    } finally {
+      setDownloading(false)
+    }
   }, [])
 
   useEffect(() => { refreshList() }, [refreshList])
@@ -116,6 +144,16 @@ export default function ReportViewer() {
           }}
         >
           Refresh
+        </Button>
+        <Button
+          size="small"
+          type="primary"
+          icon={<DownloadOutlined />}
+          loading={downloading}
+          disabled={!selectedFile || loading || !!error}
+          onClick={() => selectedFile && downloadPdf(selectedFile)}
+        >
+          PDF
         </Button>
       </div>
 

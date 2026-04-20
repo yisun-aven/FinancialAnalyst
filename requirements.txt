@@ -11,6 +11,10 @@ fastapi>=0.110.0
 uvicorn[standard]>=0.27.0
 python-multipart>=0.0.9
 
+# PDF export (used by /api/reports/{filename}/pdf)
+fpdf2>=2.8.0
+markdown>=3.5.0
+
 # Dev / quality
 ruff>=0.4.0
 pytest>=8.0.0

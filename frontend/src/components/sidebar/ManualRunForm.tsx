@@ -1,97 +1,156 @@
 import { useState } from 'react'
-import { Button, Input, Space, Tag, Typography, Alert } from 'antd'
-import { PlayCircleOutlined, PlusOutlined } from '@ant-design/icons'
+import { Button, Space, Tag, Typography, Alert } from 'antd'
+import { PlayCircleOutlined } from '@ant-design/icons'
 import { useWebSocket } from '../../api/websocket'
 import { usePipelineStore } from '../../store/pipelineStore'
+import TickerSearchSelect, { type TickerValue } from '../common/TickerSearchSelect'
+import { REGION_MAP } from '../../config/regions'
 
 const { Text } = Typography
 
-const COMMON_TICKERS = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'BRK.B']
+// Region-specific quick-add presets. Keep the list short and representative
+// (index bellwethers + AI value-chain names) so first-time users have obvious
+// starting points without having to type anything.
+const QUICK_ADDS: Record<string, { ticker: string; label: string }[]> = {
+  US: [
+    { ticker: 'AAPL',   label: 'Apple' },
+    { ticker: 'MSFT',   label: 'Microsoft' },
+    { ticker: 'GOOGL',  label: 'Alphabet' },
+    { ticker: 'AMZN',   label: 'Amazon' },
+    { ticker: 'NVDA',   label: 'NVIDIA' },
+    { ticker: 'META',   label: 'Meta' },
+    { ticker: 'TSLA',   label: 'Tesla' },
+    { ticker: 'BRK-B',  label: 'Berkshire B' },
+  ],
+  TW: [
+    { ticker: '2330.TW', label: 'TSMC' },
+    { ticker: '2317.TW', label: 'Foxconn' },
+    { ticker: '2454.TW', label: 'MediaTek' },
+    { ticker: '2308.TW', label: 'Delta Electronics' },
+    { ticker: '2303.TW', label: 'UMC' },
+    { ticker: '3711.TW', label: 'ASE Technology' },
+    { ticker: '2881.TW', label: 'Fubon Financial' },
+    { ticker: '2412.TW', label: 'Chunghwa Telecom' },
+  ],
+}
 
 export default function ManualRunForm() {
-  const [inputVal, setInputVal] = useState('')
+  const [region, setRegion] = useState<string>('US')
   const [tickers, setTickers] = useState<string[]>([])
+  const [names, setNames] = useState<Record<string, string>>({})
   const { connect } = useWebSocket()
   const status = usePipelineStore((s) => s.status)
+  const errorMessage = usePipelineStore((s) => s.errorMessage)
+  const isRunning = status === 'running'
 
-  const addTicker = (raw: string) => {
-    const cleaned = raw.trim().toUpperCase().replace(/[^A-Z0-9.^-]/g, '')
-    if (cleaned && !tickers.includes(cleaned)) {
-      setTickers((prev) => [...prev, cleaned])
-    }
-    setInputVal('')
+  const addTicker = (raw: string, name?: string) => {
+    const cleaned = raw.trim().toUpperCase()
+    if (!cleaned || tickers.includes(cleaned)) return
+    setTickers((prev) => [...prev, cleaned])
+    if (name) setNames((prev) => ({ ...prev, [cleaned]: name }))
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault()
-      addTicker(inputVal)
-    }
+  const removeTicker = (t: string) => {
+    setTickers((prev) => prev.filter((x) => x !== t))
+    setNames((prev) => {
+      const { [t]: _removed, ...rest } = prev
+      return rest
+    })
   }
 
-  const removeTicker = (t: string) => setTickers((prev) => prev.filter((x) => x !== t))
+  const handleSelection = (v: TickerValue) => {
+    if (v.region !== region) setRegion(v.region)
+    if (v.ticker) addTicker(v.ticker, v.name)
+  }
 
   const handleRun = () => {
     if (!tickers.length) return
     connect('/ws/run', { tickers })
   }
 
-  const isRunning = status === 'running'
+  const quickAdds = QUICK_ADDS[region] ?? []
+  const regionCfg = REGION_MAP[region]
 
   return (
     <Space direction="vertical" style={{ width: '100%' }} size={12}>
+      {/* Region + ticker search */}
       <div>
-        <Text style={{ fontSize: 11, color: '#8a909e', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-          Quick add
+        <Text style={{ fontSize: 11, color: '#8a909e', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+          Pick region & search ticker
         </Text>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
-          {COMMON_TICKERS.map((t) => (
-            <Tag
-              key={t}
-              style={{ cursor: 'pointer', fontSize: 11 }}
-              color={tickers.includes(t) ? 'blue' : 'default'}
-              onClick={() => (tickers.includes(t) ? removeTicker(t) : addTicker(t))}
-            >
-              {t}
-            </Tag>
-          ))}
+        <div style={{ marginTop: 6 }}>
+          <TickerSearchSelect
+            value={{ region, ticker: '' }}
+            onChange={handleSelection}
+            disabled={isRunning}
+          />
         </div>
+        {regionCfg && (
+          <Text style={{ fontSize: 11, color: '#8a909e', marginTop: 4, display: 'block' }}>
+            Searching {regionCfg.exchangeName}
+          </Text>
+        )}
       </div>
 
-      <div>
-        <Text style={{ fontSize: 11, color: '#8a909e', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-          Custom tickers
-        </Text>
-        <Input
-          style={{ marginTop: 6 }}
-          placeholder="e.g. TSM, 005930.KS"
-          value={inputVal}
-          onChange={(e) => setInputVal(e.target.value)}
-          onKeyDown={handleKeyDown}
-          suffix={
-            <PlusOutlined
-              style={{ cursor: 'pointer', color: '#4f6ef7' }}
-              onClick={() => addTicker(inputVal)}
-            />
-          }
-          disabled={isRunning}
-        />
-        <Text style={{ fontSize: 11, color: '#8a909e' }}>Press Enter or comma to add</Text>
-      </div>
+      {/* Quick-add presets (region-specific) */}
+      {quickAdds.length > 0 && (
+        <div>
+          <Text style={{ fontSize: 11, color: '#8a909e', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+            Quick add
+          </Text>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
+            {quickAdds.map(({ ticker, label }) => {
+              const isSelected = tickers.includes(ticker)
+              return (
+                <Tag
+                  key={ticker}
+                  style={{ cursor: 'pointer', fontSize: 11, padding: '2px 6px' }}
+                  color={isSelected ? 'blue' : 'default'}
+                  onClick={() => (isSelected ? removeTicker(ticker) : addTicker(ticker, label))}
+                  title={label}
+                >
+                  {/* Symbol + tiny company name so .TW codes are decipherable */}
+                  <span style={{ fontWeight: 600 }}>{ticker.replace(/\.TW$/, '').replace(/\.TWO$/, '')}</span>
+                  <span style={{ color: isSelected ? '#4f6ef7' : '#8a909e', marginLeft: 4 }}>
+                    {label}
+                  </span>
+                </Tag>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
+      {/* Selected tickers */}
       {tickers.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-          {tickers.map((t) => (
-            <Tag key={t} closable onClose={() => removeTicker(t)} color="blue" style={{ fontSize: 12 }}>
-              {t}
-            </Tag>
-          ))}
+        <div>
+          <Text style={{ fontSize: 11, color: '#8a909e', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+            Selected ({tickers.length})
+          </Text>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
+            {tickers.map((t) => (
+              <Tag
+                key={t}
+                closable
+                onClose={() => removeTicker(t)}
+                color="blue"
+                style={{ fontSize: 12, padding: '2px 8px' }}
+              >
+                <span style={{ fontWeight: 600 }}>{t}</span>
+                {names[t] && (
+                  <span style={{ color: '#4a5060', marginLeft: 4, fontSize: 11 }}>
+                    · {names[t]}
+                  </span>
+                )}
+              </Tag>
+            ))}
+          </div>
         </div>
       )}
 
       {status === 'error' && (
         <Alert
-          message={usePipelineStore.getState().errorMessage ?? 'Error'}
+          message={errorMessage ?? 'Error'}
           type="error"
           showIcon
           style={{ fontSize: 12 }}

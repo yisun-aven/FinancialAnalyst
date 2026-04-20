@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="Financial Analyst AI")
@@ -151,6 +151,41 @@ async def list_reports() -> JSONResponse:
     return JSONResponse(reports)
 
 
+# NOTE: the `/pdf` route MUST be declared before the generic `{filename:path}`
+# route, otherwise FastAPI would match the `:path` converter greedily and the
+# PDF route would never be reached.
+@app.get("/api/reports/{filename}/pdf")
+async def download_report_pdf(filename: str):
+    """Render the given markdown report as a PDF and stream it back."""
+    if not re.match(r"^[\w\-\.]+$", filename):
+        return JSONResponse({"error": "Invalid filename"}, status_code=400)
+    path = _reports_dir() / filename
+    if not path.exists():
+        return JSONResponse({"error": "Not found"}, status_code=404)
+
+    try:
+        from tools.pdf_export import render_markdown_file_to_pdf
+    except ImportError as exc:
+        return JSONResponse(
+            {"error": f"PDF export not available: {exc}. Run `pip install fpdf2 markdown`."},
+            status_code=501,
+        )
+
+    # Use the markdown stem (without trailing _analyst_report) as the human title
+    pretty_title = re.sub(r"_analyst_report$", "", path.stem).replace("_", " ")
+    try:
+        pdf_bytes = render_markdown_file_to_pdf(path, title=pretty_title)
+    except Exception as exc:
+        return JSONResponse({"error": f"PDF rendering failed: {exc}"}, status_code=500)
+
+    pdf_filename = path.stem + ".pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{pdf_filename}"'},
+    )
+
+
 @app.get("/api/reports/{filename:path}")
 async def get_report(filename: str) -> JSONResponse:
     if not re.match(r"^[\w\-\.]+$", filename):
@@ -226,9 +261,14 @@ async def search_tickers(q: str = "", region: str = "US") -> JSONResponse:
 
     import yfinance as yf
 
-    suffix = _REGION_SUFFIX.get(region.upper(), "")
+    region_up = region.upper()
+    # "TW" covers both TWSE main board (.TW) and Taipei Exchange OTC (.TWO) so
+    # users don't have to guess which market a Taiwan name trades on.
+    if region_up == "TW":
+        accepted_suffixes = (".TW", ".TWO")
+    else:
+        accepted_suffixes = (_REGION_SUFFIX.get(region_up, ""),)
 
-    # yfinance search returns candidates; we filter by exchange suffix
     try:
         results = yf.Search(q, max_results=20).quotes
     except Exception:
@@ -241,16 +281,14 @@ async def search_tickers(q: str = "", region: str = "US") -> JSONResponse:
         exchange: str = r.get("exchange", "")
         q_type: str = r.get("quoteType", "")
 
-        # For US: accept symbols with no dot suffix (plain NYSE/NASDAQ symbols)
-        if region.upper() == "US":
+        if region_up == "US":
             if "." in sym:
                 continue
-            # Skip crypto, futures, etc. unless user explicitly wants them
             if q_type in ("CRYPTOCURRENCY", "FUTURE", "INDEX"):
                 continue
         else:
-            # For non-US: require the correct suffix
-            if not sym.endswith(suffix):
+            # Non-US: require one of the region's accepted suffixes.
+            if not any(sym.endswith(s) for s in accepted_suffixes if s):
                 continue
 
         out.append({
